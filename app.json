@@ -1,0 +1,60 @@
+{
+  "expo": {
+    "name": "Mentacare",
+    "slug": "stream",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.tommusungu.stream",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Allow Mentacare to access your camera for video calls",
+        "NSMicrophoneUsageDescription": "Allow Mentacare to access your microphone for voice and video calls",
+        "UIBackgroundModes": ["audio", "voip", "fetch"]
+      }
+    },
+   
+    "assetBundlePatterns": ["**/*"],
+    
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.tommusungu.stream",
+      "permissions": ["CAMERA", "RECORD_AUDIO", "MODIFY_AUDIO_SETTINGS", "BLUETOOTH", "BLUETOOTH_CONNECT"]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow Mentacare to access your camera for video calls"
+        }
+      ],
+      [
+        "expo-av",
+        {
+          "microphonePermission": "Allow Mentacare to access your microphone for voice and video calls"
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "7b8e1395-8ae2-4feb-85fc-b05847780ca2"
+      }
+    },
+    "owner": "tommusungu"
+  }
+}
+
