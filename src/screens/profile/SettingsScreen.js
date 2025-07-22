@@ -92,6 +92,7 @@ export default function SettingsScreen({ onLogout }) {
           () => {},
           "switch",
         )}
+        
         {renderSettingItem(
           <Sun size={24} color={isDark ? "#FFFFFF" : "#000000"} />,
           "Use System Settings",

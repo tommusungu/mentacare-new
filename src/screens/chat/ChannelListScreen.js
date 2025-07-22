@@ -220,7 +220,7 @@ export default function ChannelListScreen({ userId: propUserId, userRole }) {
 
   const handleChannelPress = (channel) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
-
+    // console.log("channel is ",channel)
     navigation.navigate("Channel", {
       channelId: channel.id,
       channelName: channel.name,
@@ -230,18 +230,20 @@ export default function ChannelListScreen({ userId: propUserId, userRole }) {
 
   const handleCreateChannel = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
-    navigation.navigate("CreateChannel")
+     navigation.navigate("Appointments", {
+                    screen: "ProfessionalsList",
+                  })
   }
 
-  const handleContactsPress = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
-    navigation.navigate("Contacts")
-  }
+  // const handleContactsPress = () => {
+  //   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+  //   navigation.navigate("Contacts")
+  // }
 
-  const handleSettingsPress = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
-    navigation.navigate("Settings")
-  }
+  // const handleSettingsPress = () => {
+  //   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+  //   navigation.navigate("Settings")
+  // }
 
   const onRefresh = () => {
     setRefreshing(true)
@@ -255,34 +257,19 @@ export default function ChannelListScreen({ userId: propUserId, userRole }) {
   const renderChannelItem = ({ item }) => {
     // Get first letter of name for avatar placeholder
     const firstLetter = item.name ? item.name.charAt(0).toUpperCase() : "?"
-
+const baseUrl = "https://ui-avatars.com/api/";
+    const initials = encodeURIComponent(item?.name || "User");
+    const profileImage = item?.photoURL || `${baseUrl}?name=${initials}&background=0D47A1&color=fff`
+    
     return (
       <TouchableOpacity
         className={`flex-row items-center p-4 ${isDark ? "border-gray-800" : "border-gray-200"} border-b`}
         onPress={() => handleChannelPress(item)}
       >
         {/* Avatar */}
-        {item.image ? (
-          <Image source={{ uri: item.image }} className="w-14 h-14 rounded-full mr-3" />
-        ) : (
-          <View
-            className={`w-14 h-14 rounded-full justify-center items-center mr-3 ${
-              item.type === "direct"
-                ? isDark
-                  ? "bg-gray-700"
-                  : "bg-gray-200"
-                : isDark
-                  ? "bg-[#7A33FF]"
-                  : "bg-[#8E64FF]"
-            }`}
-          >
-            {item.type === "direct" ? (
-              <Text className={`text-xl font-bold ${isDark ? "text-white" : "text-gray-600"}`}>{firstLetter}</Text>
-            ) : (
-              <Users size={24} color="#FFFFFF" />
-            )}
-          </View>
-        )}
+       
+          <Image source={{ uri: item.image || profileImage}} className="w-12 h-12 rounded-full mr-3" />
+       
 
         {/* Channel info */}
         <View className="flex-1">
@@ -298,8 +285,8 @@ export default function ChannelListScreen({ userId: propUserId, userRole }) {
                 className={`text-xs ${
                   item.isUnread
                     ? isDark
-                      ? "text-[#00A884] font-medium"
-                      : "text-[#00A884] font-medium"
+                      ? "text-[#ea580c] font-medium"
+                      : "text-[#ea580c] font-medium"
                     : isDark
                       ? "text-gray-400"
                       : "text-gray-500"
@@ -329,7 +316,7 @@ export default function ChannelListScreen({ userId: propUserId, userRole }) {
               </Text>
 
               {item.isUnread && (
-                <View className="bg-[#00A884] rounded-full w-6 h-6 justify-center items-center">
+                <View className="bg-[#ea580c] rounded-full w-6 h-6 justify-center items-center">
                   <Text className="text-white text-xs font-bold">1</Text>
                 </View>
               )}
@@ -343,7 +330,7 @@ export default function ChannelListScreen({ userId: propUserId, userRole }) {
   if (loading && !refreshing) {
     return (
       <View className={`flex-1 justify-center items-center ${isDark ? "bg-[#121212]" : "bg-white"}`}>
-        <ActivityIndicator size="large" color="#00A884" />
+        <ActivityIndicator size="large" color="#ea580c" />
       </View>
     )
   }
@@ -389,8 +376,8 @@ export default function ChannelListScreen({ userId: propUserId, userRole }) {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={["#00A884"]}
-            tintColor={isDark ? "#FFFFFF" : "#00A884"}
+            colors={["#ea580c"]}
+            tintColor={isDark ? "#FFFFFF" : "#ea580c"}
           />
         }
         ListEmptyComponent={
@@ -404,22 +391,10 @@ export default function ChannelListScreen({ userId: propUserId, userRole }) {
 
       {/* Action buttons */}
       <View className="flex-row justify-end p-4">
-        <TouchableOpacity
-          className="w-12 h-12 rounded-full bg-[#00A884] justify-center items-center mr-3 shadow-md"
-          onPress={handleContactsPress}
-          style={{
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.3,
-            shadowRadius: 3,
-            elevation: 5,
-          }}
-        >
-          <User size={24} color="#FFFFFF" />
-        </TouchableOpacity>
+        
 
         <TouchableOpacity
-          className="w-12 h-12 rounded-full bg-[#00A884] justify-center items-center shadow-md"
+          className="w-12 h-12 rounded-full bg-[#ea580c] justify-center items-center shadow-md"
           onPress={handleCreateChannel}
           style={{
             shadowColor: "#000",

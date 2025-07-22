@@ -10,6 +10,7 @@ import { createNotification } from "../../redux/slices/notificationSlice"
 import { useToast } from "react-native-toast-notifications"
 import { Calendar, Clock, User, Check } from "lucide-react-native"
 import { format } from "date-fns"
+import { sendBookingConfirmationEmail } from "../../utils/api"
 
 export default function ConfirmAppointmentScreen() {
   const { isDark } = useTheme()
@@ -18,7 +19,7 @@ export default function ConfirmAppointmentScreen() {
   const dispatch = useDispatch()
   const toast = useToast()
 
-  const { professionalId, professionalName, reason, scheduledFor, timeSlot } = route.params
+  const { professionalId, professionalName,professionalEmail, reason, scheduledFor, timeSlot } = route.params
   const [notes, setNotes] = useState("")
   const [submitting, setSubmitting] = useState(false)
   const [checkingAvailability, setCheckingAvailability] = useState(false)
@@ -26,7 +27,7 @@ export default function ConfirmAppointmentScreen() {
   const availabilityMap = useSelector((state) => state.appointments.availabilityMap)
 
   const currentUser = useSelector((state) => state.user.currentUser)
-
+  // console.log("professionalEmail",professionalEmail)
   // Clear availability map when component unmounts
   useEffect(() => {
     return () => {
@@ -106,6 +107,8 @@ export default function ConfirmAppointmentScreen() {
         professionalName,
         patientId: currentUser.uid,
         patientName: currentUser.name,
+        patientEmail: currentUser.email,
+        professionalEmail, 
         scheduledFor,
         reason,
         notes: notes.trim() || null,
@@ -121,25 +124,40 @@ export default function ConfirmAppointmentScreen() {
         const appointment = resultAction.payload
 
         // Create notifications
-        dispatch(
-          createNotification({
-            userId: professionalId,
-            title: "New Appointment Request",
-            body: `${currentUser.name} has requested an appointment`,
-            type: "appointment",
-            data: { appointmentId: appointment.id },
-          }),
-        )
+        // dispatch(
+        //   createNotification({
+        //     userId: professionalId,
+        //     title: "New Appointment Request",
+        //     body: `${currentUser.name} has requested an appointment`,
+        //     type: "appointment",
+        //     data: { appointmentId: appointment.id },
+        //   }),
+        // )
 
-        dispatch(
-          createNotification({
-            userId: currentUser.uid,
-            title: "Appointment Requested",
-            body: `Your appointment with ${professionalName} has been requested`,
-            type: "appointment",
-            data: { appointmentId: appointment.id },
-          }),
-        )
+        // dispatch(
+        //   createNotification({
+        //     userId: currentUser.uid,
+        //     title: "Appointment Requested",
+        //     body: `Your appointment with ${professionalName} has been requested`,
+        //     type: "appointment",
+        //     data: { appointmentId: appointment.id },
+        //   }),
+        // )
+
+     sendBookingConfirmationEmail({
+      appointmentId: appointment.id,
+      professionalName,
+      patientName: currentUser.name,
+      scheduledFor,
+      reason,
+      notes,
+      // patientEmail: currentUser.email,
+      patientEmail: currentUser.email,
+      professionalEmail, // you should have this from professional profile
+    });
+   
+
+
 
         toast.show("Appointment requested successfully", {
           type: "success",

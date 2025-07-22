@@ -68,6 +68,7 @@ export default function SettingsScreen({ route }) {
           () => {},
           "switch",
         )}
+        
         {renderSettingItem(
           <Sun size={24} color={isDark ? "#FFFFFF" : "#000000"} />,
           "Use System Settings",

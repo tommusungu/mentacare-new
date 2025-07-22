@@ -168,7 +168,7 @@ export default function CreateChannelScreen() {
         className={`flex-row items-center p-3 ${isDark ? "border-gray-800" : "border-gray-200"} border-b`}
         onPress={() => toggleUserSelection(item)}
       >
-        <View className="w-10 h-10 rounded-full bg-[#005FFF] justify-center items-center mr-3">
+        <View className="w-10 h-10 rounded-full bg-[#ea580c] justify-center items-center mr-3">
           <User size={20} color="#FFFFFF" />
         </View>
 
@@ -181,7 +181,7 @@ export default function CreateChannelScreen() {
 
         <View
           className={`w-6 h-6 rounded-full justify-center items-center ${
-            isSelected ? "bg-[#005FFF]" : isDark ? "bg-gray-700" : "bg-gray-300"
+            isSelected ? "bg-[#ea580c]" : isDark ? "bg-gray-700" : "bg-gray-300"
           }`}
         >
           {isSelected && <Check size={16} color="#FFFFFF" />}
@@ -250,7 +250,7 @@ export default function CreateChannelScreen() {
 
       {searching ? (
         <View className="flex-1 justify-center items-center">
-          <ActivityIndicator size="large" color="#005FFF" />
+          <ActivityIndicator size="large" color="#ea580c" />
           <Text className={`mt-2 ${isDark ? "text-white" : "text-black"}`}>Searching...</Text>
         </View>
       ) : (
@@ -271,7 +271,7 @@ export default function CreateChannelScreen() {
       <View className="p-3">
         <TouchableOpacity
           className={`p-3 rounded-lg ${
-            selectedUsers.length > 0 ? "bg-[#005FFF]" : isDark ? "bg-gray-700" : "bg-gray-300"
+            selectedUsers.length > 0 ? "bg-[#ea580c]" : isDark ? "bg-gray-700" : "bg-gray-300"
           } justify-center items-center`}
           onPress={createChannel}
           disabled={selectedUsers.length === 0 || isCreating}

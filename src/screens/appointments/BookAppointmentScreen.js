@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { View, Text, TextInput, TouchableOpacity, ScrollView, ActivityIndicator } from "react-native"
+import { View, Text, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, Modal } from "react-native"
 import { useTheme } from "../../context/ThemeContext"
 import { useNavigation, useRoute } from "@react-navigation/native"
 import { useDispatch, useSelector } from "react-redux"
@@ -17,8 +17,27 @@ export default function BookAppointmentScreen() {
   const dispatch = useDispatch()
   const toast = useToast()
 
+  const [isDropdownVisible, setIsDropdownVisible] = useState(false);
+const [customReason, setCustomReason] = useState("");
+
+// quick list you can extend or fetch from the DB later
+const presetReasons = [
+  "Anxiety and panic attacks Management",
+  "Stress and burnout",
+  "Depression and burnout",
+  "Grief and Loss support",
+  "Anger management",
+  "Coping with chronic illness",
+  "Personal growth and self discovery",
+  "Suicidal thoughts",
+  "Family therapy",
+  "Behavioural concerns",
+  "Addiction counseling",
+];
+
   const { professionalId } = route.params
   const [professional, setProfessional] = useState(null)
+  // console.log("selected professional: ",professional)
   const [reason, setReason] = useState("")
   const [loading, setLoading] = useState(true)
 
@@ -70,6 +89,8 @@ export default function BookAppointmentScreen() {
     navigation.navigate("Availability", {
       professionalId,
       professionalName: professional?.name,
+      professionalEmail: professional?.email,
+      
       reason,
     })
   }
@@ -120,21 +141,31 @@ export default function BookAppointmentScreen() {
           )}
         </View>
 
-        <Text className={`text-lg font-bold mb-2 ${isDark ? "text-white" : "text-black"}`}>Reason for Appointment</Text>
+        <Text
+  className={`text-lg font-bold mb-2 ${
+    isDark ? "text-white" : "text-black"
+  }`}
+>
+  Reason for Appointment
+</Text>
 
-        <TextInput
-          className={`rounded-xl p-4 min-h-[150px] mb-6 ${
-            isDark
-              ? "bg-[#1E1E1E] text-white border border-[#2C2C2C]"
-              : "bg-[#F5F5F5] text-black border border-[#E0E0E0]"
-          }`}
-          placeholder="Briefly describe why you're seeking this appointment..."
-          placeholderTextColor={isDark ? "#FFFFFF80" : "#00000080"}
-          value={reason}
-          onChangeText={setReason}
-          multiline
-          textAlignVertical="top"
-        />
+{/* main touchable “input” */}
+<TouchableOpacity
+  onPress={() => setIsDropdownVisible(true)}
+  className={`rounded-xl p-4 mb-6 ${
+    isDark
+      ? "bg-[#1E1E1E] border border-[#2C2C2C]"
+      : "bg-[#F5F5F5] border border-[#E0E0E0]"
+  }`}
+>
+  <Text
+    className={`${reason ? "" : "italic"} ${
+      isDark ? "text-white" : "text-black"
+    }`}
+  >
+    {reason || "Select a reason…"}
+  </Text>
+</TouchableOpacity>
 
         <TouchableOpacity
           className="h-12 rounded-lg justify-center items-center bg-[#ea580c] mt-4"
@@ -143,6 +174,93 @@ export default function BookAppointmentScreen() {
           <Text className="text-white text-base font-bold">Continue to Select Time</Text>
         </TouchableOpacity>
       </View>
+
+      <Modal
+  visible={isDropdownVisible}
+  transparent
+  animationType="fade"
+  onRequestClose={() => setIsDropdownVisible(false)}
+>
+  {/* backdrop */}
+  <TouchableOpacity
+    className="flex-1 justify-end items-center bg-black/50"
+    activeOpacity={1}
+    onPress={() => setIsDropdownVisible(false)}
+  >
+    {/* dropdown container */}
+    <View
+      className={`w-full max-h-[60%] rounded-t-[32px] p-2 px-4 pt-8 ${
+        isDark ? "bg-[#1E1E1E]" : "bg-white"
+      }`}
+    >
+      <ScrollView>
+        {presetReasons.map((item) => (
+          <TouchableOpacity
+            key={item}
+            onPress={() => {
+              if (item.startsWith("Other")) {
+                // show a text input for custom reason
+                setCustomReason("");
+              } else {
+                setReason(item);
+                setIsDropdownVisible(false);
+              }
+            }}
+            className={` py-3 mx-3 border-b  ${
+                isDark ? "border-[#404040]" : "border-gray-200"
+              }`}
+          >
+            <Text
+              className={`text-base ${
+                isDark ? "text-gray-200" : "text-black"
+              }`}
+            >
+              {item}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+
+      {/* custom reason field (only visible if user tapped “Other…”) */}
+      {/* {customReason !== null && (
+        <View className="p-4">
+          <Text
+            className={`mb-2 font-medium ${
+              isDark ? "text-white" : "text-black"
+            }`}
+          >
+            Enter custom reason
+          </Text>
+          <TextInput
+            value={customReason}
+            onChangeText={setCustomReason}
+            placeholder="Type your reason…"
+            placeholderTextColor={isDark ? "#FFFFFF80" : "#00000080"}
+            multiline
+            className={`rounded-lg p-3 min-h-[100px] ${
+              isDark
+                ? "bg-[#2C2C2C] text-white"
+                : "bg-[#F5F5F5] text-black"
+            }`}
+            textAlignVertical="top"
+          />
+
+          <TouchableOpacity
+            onPress={() => {
+              if (customReason.trim()) {
+                setReason(customReason.trim());
+                setIsDropdownVisible(false);
+              }
+            }}
+            className="mt-4 h-11 rounded-lg bg-[#ea580c] justify-center items-center"
+          >
+            <Text className="text-white font-bold">Save Reason</Text>
+          </TouchableOpacity>
+        </View>
+      )} */}
+    </View>
+  </TouchableOpacity>
+</Modal>
     </ScrollView>
   )
 }

@@ -10,6 +10,16 @@ import { TouchableRipple } from "react-native-paper"
 
 const screenWidth = Dimensions.get("window").width
 
+const shuffleArray = (array) => {
+  const shuffled = [...array]
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+  }
+  return shuffled
+}
+
+
 const HomeArticlesTwo = ({ isDark, showAll = false }) => {
   const [articles, setArticles] = useState([])
   const [loading, setLoading] = useState(true)
@@ -30,7 +40,12 @@ const HomeArticlesTwo = ({ isDark, showAll = false }) => {
           articlesData.push({ id: doc.id, ...doc.data() })
         })
 
-        setArticles(articlesData)
+
+        const shuffledArticles = shuffleArray(articlesData)
+        
+        setArticles(shuffledArticles)
+
+
       } catch (error) {
         console.error("Error fetching articles:", error)
       } finally {

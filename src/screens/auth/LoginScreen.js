@@ -17,9 +17,7 @@ import { useDispatch } from "react-redux"
 import { loginUser, setUser } from "../../redux/slices/userSlice"
 import { useToast } from "react-native-toast-notifications"
 import { Eye, EyeOff } from "lucide-react-native"
-import { fetchChatToken } from "../../hooks/fetchChatTokenHook"
 import { StatusBar } from "react-native"
-import logoLight from '../../../assets/loginImage.png' 
 import logoDark from '../../../assets/loginImage.png'
 
 export default function LoginScreen({ navigation, onLogin }) {
@@ -53,15 +51,12 @@ export default function LoginScreen({ navigation, onLogin }) {
       if (loginUser.fulfilled.match(resultAction)) {
         const userData = resultAction.payload
 
-        // Generate a mock token for Stream - in a real app, this would come from your backend
-        const mockToken = await fetchChatToken(userData.uid)
-        console.log('mockToken: ',mockToken)
 
         // Call the login callback to set up Stream clients
-        onLogin(userData.uid, userData.name, mockToken, userData.role, userData)
+        onLogin(userData.uid, userData.name, userData.role, userData)
         console.log('userData:',userData)
         
-        await dispatch(setUser(userData))
+       dispatch(setUser(userData))
 
         toast.show("Login successful!", {
           type: "success",
@@ -100,7 +95,7 @@ export default function LoginScreen({ navigation, onLogin }) {
               />
         <View className="items-center mt-10 mb-8">
           <Image
-                      source={isDark ? logoDark : logoLight}
+                      source={logoDark}
                       className="w-auto h-[250px] rounded-xl mb-4"
                       resizeMode="contain"
                     />

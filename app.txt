@@ -1,7 +1,7 @@
 "use client"
 import "./global.css"
+
 import { useEffect, useState } from "react"
-import { StatusBar } from "expo-status-bar"
 import { SafeAreaProvider } from "react-native-safe-area-context"
 import { NavigationContainer } from "@react-navigation/native"
 import AsyncStorage from "@react-native-async-storage/async-storage"
@@ -9,7 +9,7 @@ import { Provider } from "react-redux"
 import { store } from "./src/redux/store"
 import { ThemeProvider } from "./src/context/ThemeContext"
 import { ChatProvider } from "./src/context/ChatContext"
-import { CallProvider } from "./src/context/CallContext"
+// import { CallProvider } from "./src/context/CallContext"
 import { NotificationProvider } from "./src/context/NotificationContext"
 import AppNavigator from "./src/navigation/AppNavigator"
 import AuthNavigator from "./src/navigation/AuthNavigator"
@@ -18,39 +18,82 @@ import { ToastProvider } from "react-native-toast-notifications"
 import { initializeFirebase } from "./src/config/firebase"
 import { GestureHandlerRootView } from "react-native-gesture-handler"
 import IncomingCallModal from "./src/components/IncomingCallModal"
-import "react-native-get-random-values"
-import { getChatClientInstance } from "./src/context/ChatContext"
-import { getVideoClientInstance } from "./src/context/CallContext"
+import OfflineNotice from "./src/components/OfflineNotice"
+import { StreamVideo, StreamVideoClient } from "@stream-io/video-react-native-sdk"
+import useStreamToken from "./src/hooks/useStreamToken"
+import { LogBox, StatusBar } from "react-native"
+
 // Initialize Firebase
 initializeFirebase()
+const apiKey = process.env.EXPO_PUBLIC_STREAM_API_KEY
 
+// Ignore specific warnings that might come from dependencies
+LogBox.ignoreLogs(["Warning: ..."])
 export default function App() {
   const [isReady, setIsReady] = useState(false)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [userId, setUserId] = useState("")
-  const [userToken, setUserToken] = useState("")
+  const [userName, setUserName] = useState("")
   const [userRole, setUserRole] = useState(null) // 'professional' or 'patient'
   const [userData, setUserData] = useState(null)
-  const [chatContextRef, setChatContextRef] = useState(null)
-  const [callContextRef, setCallContextRef] = useState(null)
+  const [streamToken, setStreamToken] = useState("")
+  const [videoClient, setVideoClient] = useState(null)
 
+    const { fetchStreamToken, loading: streamLoading, error: streamError } = useStreamToken()
+
+  
   useEffect(() => {
     const bootstrapAsync = async () => {
       try {
         // Check if user is already logged in
-        const token = await AsyncStorage.getItem("userToken")
         const id = await AsyncStorage.getItem("userId")
         const name = await AsyncStorage.getItem("userName")
         const role = await AsyncStorage.getItem("userRole")
         const userDataStr = await AsyncStorage.getItem("userData")
+        const savedStreamToken = await AsyncStorage.getItem("streamToken")
 
-        if (token && id) {
-          setUserId(id)
-          setUserToken(token)
-          setUserRole(role || "patient")
-          setUserData(userDataStr ? JSON.parse(userDataStr) : null)
-          setIsAuthenticated(true)
-        }
+
+        
+
+if (id) {
+  setUserId(id)
+  setUserName(name)
+  setUserRole(role || "patient")
+  setUserData(userDataStr ? JSON.parse(userDataStr) : null)
+
+  // Fetch stream token if not stored
+  let tokenToUse = savedStreamToken
+  if (!tokenToUse) {
+    const newStreamToken = await fetchStreamToken(id)
+    if (newStreamToken) {
+      tokenToUse = newStreamToken
+      await AsyncStorage.setItem("streamToken", newStreamToken)
+    }
+  }
+
+  if (tokenToUse) {
+    setStreamToken(tokenToUse)
+
+    const streamUser = {
+      id,
+      name: name || "User",
+      image: userDataStr ? JSON.parse(userDataStr)?.profileImage : undefined,
+      custom: {
+        role: role || "patient",
+        email: JSON.parse(userDataStr)?.email,
+      },
+    }
+
+    const vc = StreamVideoClient.getOrCreateInstance({
+      apiKey,
+      user: streamUser,
+      token: tokenToUse,
+    })
+     setVideoClient(vc)
+
+    setIsAuthenticated(true)
+  }
+}
       } catch (error) {
         console.log("Error during bootstrap:", error)
       } finally {
@@ -61,69 +104,103 @@ export default function App() {
     bootstrapAsync()
   }, [])
 
-  const handleLogin = async (userId, userName, token, role, userData) => {
-    try {
-      // Save credentials
-      await AsyncStorage.setItem("userToken", token)
-      await AsyncStorage.setItem("userId", userId)
-      await AsyncStorage.setItem("userName", userName)
-      await AsyncStorage.setItem("userRole", role)
-      await AsyncStorage.setItem("userData", JSON.stringify(userData))
+  const handleLogin = async (userId, userName, role, userData) => {
+  try {
+    await AsyncStorage.setItem("userId", userId)
+    await AsyncStorage.setItem("userName", userName)
+    await AsyncStorage.setItem("userRole", role)
+    await AsyncStorage.setItem("userData", JSON.stringify(userData))
+
+    const newStreamToken = await fetchStreamToken(userId)
+    if (newStreamToken) {
+      await AsyncStorage.setItem("streamToken", newStreamToken)
+      setStreamToken(newStreamToken)
+
+      const streamUser = {
+        id: userId,
+        name: userName || userData?.name || "User",
+        image: userData?.profileImage || userData?.photoURL,
+        custom: {
+          role,
+          email: userData?.email,
+        },
+      }
+
+      const vc = StreamVideoClient.getOrCreateInstance({
+        apiKey,
+        user: streamUser,
+        token: newStreamToken,
+      })
+      
+      setVideoClient(vc)
+      
+
+
 
       setUserId(userId)
-      setUserToken(token)
+      setUserName(userName)
       setUserRole(role)
       setUserData(userData)
       setIsAuthenticated(true)
-    } catch (error) {
-      console.log("Login error:", error)
+    } else {
+      console.error("Failed to fetch Stream token during login")
     }
+  } catch (error) {
+    console.error("Login error:", error)
   }
+}
 
-  const handleLogout = async () => {
-    try {
-      // Disconnect clients before logout
-      // const chatClient = getChatClientInstance()
-      // if (chatClient) {
-      //   try {
-      //     await chatClient.disconnectUser()
-      //     console.log("Chat client disconnected successfully")
-      //   } catch (error) {
-      //     console.error("Error disconnecting chat client:", error)
-      //   }
-      // }
 
-      // const videoClient = getVideoClientInstance()
-      // if (videoClient) {
-      //   try {
-      //     await videoClient.disconnectUser()
-      //     console.log("Video client disconnected successfully")
-      //   } catch (error) {
-      //     console.error("Error disconnecting video client:", error)
-      //   }
-      // }
+ const handleLogout = async () => {
+  try {
+    if (videoClient) {
+      await videoClient.disconnectUser()
+       setVideoClient(null)    
+}
 
-      // Clear storage
-      await AsyncStorage.removeItem("userToken")
-      await AsyncStorage.removeItem("userId")
-      await AsyncStorage.removeItem("userName")
-      await AsyncStorage.removeItem("userRole")
-      await AsyncStorage.removeItem("userData")
+    await AsyncStorage.multiRemove([
+      "userId",
+      "userName",
+      "userRole",
+      "userData",
+      "streamToken",
+    ])
 
-      setIsAuthenticated(false)
-      setUserId("")
-      setUserToken("")
-      setUserRole(null)
-      setUserData(null)
-    } catch (error) {
-      console.log("Logout error:", error)
-    }
+    setIsAuthenticated(false)
+    setUserId("")
+    setUserName("")
+    setUserRole(null)
+    setUserData(null)
+    setStreamToken("")
+  } catch (error) {
+    console.error("Logout error:", error)
   }
+}
 
-  
-  if (!isReady) {
+
+
+  // Create the user object in the correct format for Stream
+  const streamUser = userId
+    ? {
+        id: userId,
+        name: userName || userData?.name || userData?.displayName || "User",
+        image: userData?.profileImage || userData?.avatar || userData?.photoURL,
+        custom: {
+          role: userRole,
+          email: userData?.email,
+        },
+      }
+    : null
+
+  if (!isReady || streamLoading) {
     return <LoadingScreen />
   }
+
+  // Show error if Stream token fetch failed
+  if (streamError) {
+    console.error("Stream token error:", streamError)
+  }
+
 
   return (
     <Provider store={store}>
@@ -131,20 +208,33 @@ export default function App() {
         <SafeAreaProvider>
           <ThemeProvider>
             <ToastProvider>
-              <StatusBar style="auto" />
-              {isAuthenticated ? (
-                <NavigationContainer>
-                  <ChatProvider>
-                    <CallProvider>
+              {isAuthenticated && videoClient ? (
+                <StreamVideo client={videoClient}>
+                  <StatusBar style="auto" />
+                  <OfflineNotice />
+                  <NavigationContainer>
+                    <ChatProvider>
                       <NotificationProvider>
-                        <AppNavigator userId={userId} userRole={userRole} userData={userData} onLogout={handleLogout} />
-                        <IncomingCallModal />
+                        <AppNavigator
+                          userId={userId}
+                          userName={userName}
+                          userRole={userRole}
+                          userData={userData}
+                          onLogout={handleLogout}
+                        />
+                        {/* <IncomingCallModal /> */}
                       </NotificationProvider>
-                    </CallProvider>
-                  </ChatProvider>
-                </NavigationContainer>
+                    </ChatProvider>
+                  </NavigationContainer>
+                </StreamVideo>
+              ) : isAuthenticated ? (
+                // Show loading if authenticated but no stream token yet
+                <LoadingScreen />
               ) : (
+                // Show auth navigator if not authenticated
                 <NavigationContainer>
+                  <StatusBar style="auto" />
+                  <OfflineNotice />
                   <AuthNavigator onLogin={handleLogin} />
                 </NavigationContainer>
               )}

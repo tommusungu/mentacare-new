@@ -1,60 +1,43 @@
 "use client"
-import { View, Text, StyleSheet } from "react-native"
+import { View, Text, StyleSheet, Dimensions } from "react-native"
+import { useNetInfo } from "@react-native-community/netinfo"
 import { useTheme } from "../context/ThemeContext"
-import { Button } from "react-native-elements"
-import { Feather } from "@expo/vector-icons"
+import { WifiOff } from "lucide-react-native"
 
-const OfflineScreen = ({ onRetry }) => {
-  const { theme } = useTheme()
+const { width } = Dimensions.get("window")
+
+export default function OfflineScreen() {
+  const netInfo = useNetInfo()
+  const { isDark } = useTheme()
+
+  // Don't render anything when we're online or when connectivity status is unknown
+  if (netInfo.isConnected || netInfo.isConnected === null) {
+    return null
+  }
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.dark ? theme.colors.background : "#F2F2F7" }]}>
-      <Feather name="wifi-off" size={80} color={theme.dark ? "#FF453A" : "#FF3B30"} />
-      <Text style={[styles.title, { color: theme.dark ? theme.colors.text : "#000" }]}>You're offline</Text>
-      <Text style={[styles.subtitle, { color: theme.dark ? theme.colors.text : "#666" }]}>
-        Please check your internet connection and try again
-      </Text>
-      <Button
-        title="Try Again"
-        onPress={onRetry}
-        buttonStyle={[styles.button, { backgroundColor: theme.dark ? "#FF453A" : "#FF3B30" }]}
-        titleStyle={styles.buttonText}
-        containerStyle={styles.buttonContainer}
-      />
+    <View style={[styles.container, { backgroundColor: isDark ? "#FF3B30" : "#FF3B30" }]}>
+      <WifiOff color="#FFFFFF" size={16} />
+      <Text style={styles.text}>No Internet Connection</Text>
     </View>
   )
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    position: "absolute",
+    top: 0,
+    width: width,
+    zIndex: 1000,
+    flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    padding: 20,
+    padding: 10,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    marginTop: 20,
-    marginBottom: 10,
-  },
-  subtitle: {
-    fontSize: 16,
-    textAlign: "center",
-    marginBottom: 30,
-  },
-  button: {
-    paddingHorizontal: 30,
-    paddingVertical: 12,
-    borderRadius: 8,
-  },
-  buttonText: {
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  buttonContainer: {
-    width: "80%",
+  text: {
+    color: "#FFFFFF",
+    marginLeft: 8,
+    fontSize: 14,
+    fontWeight: "500",
   },
 })
-
-export default OfflineScreen

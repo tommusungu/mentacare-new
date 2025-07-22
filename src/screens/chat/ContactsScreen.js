@@ -9,13 +9,11 @@ import AsyncStorage from "@react-native-async-storage/async-storage"
 import { db } from "../../config/firebase"
 import { collection, query, where, getDocs, addDoc, serverTimestamp } from "firebase/firestore"
 import { useToast } from "react-native-toast-notifications"
-import { useCall } from "../../context/CallContext"
 
 export default function ContactsScreen() {
   const navigation = useNavigation()
   const { isDark } = useTheme()
   const toast = useToast()
-  const { createCall } = useCall()
   const [searchQuery, setSearchQuery] = useState("")
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(false)
@@ -99,6 +97,7 @@ export default function ContactsScreen() {
     }
   }
 
+  
   const startChat = async (user) => {
     try {
       // Check if direct message channel already exists
@@ -160,9 +159,7 @@ export default function ContactsScreen() {
         duration: 3000,
       })
 
-      // Create the call
-      const call = await createCall(user.id, user.displayName || user.name || user.id, "video")
-
+    
       // Validate call data before navigating
       if (!call) {
         throw new Error("Failed to create call")
@@ -207,7 +204,6 @@ export default function ContactsScreen() {
       })
 
       // Create the call
-      const call = await createCall(user.id, user.displayName || user.name || user.id, "audio")
 
       // Validate call data before navigating
       if (!call) {
@@ -256,7 +252,7 @@ export default function ContactsScreen() {
         className={`flex-row items-center p-3 ${isDark ? "border-gray-800" : "border-gray-200"} border-b`}
         onPress={() => viewUserProfile(item)}
       >
-        <View className="w-12 h-12 rounded-full bg-[#005FFF] justify-center items-center mr-3">
+        <View className="w-12 h-12 rounded-full bg-[#ea580c] justify-center items-center mr-3">
           <User size={24} color="#FFFFFF" />
         </View>
 
@@ -327,7 +323,7 @@ export default function ContactsScreen() {
 
       {loading ? (
         <View className="flex-1 justify-center items-center">
-          <ActivityIndicator size="large" color="#005FFF" />
+          <ActivityIndicator size="large" color="#ea580c" />
           <Text className={`mt-2 ${isDark ? "text-white" : "text-black"}`}>Loading contacts...</Text>
         </View>
       ) : (

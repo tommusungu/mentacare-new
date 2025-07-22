@@ -1,13 +1,14 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, RefreshControl } from "react-native"
+import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, RefreshControl, Alert } from "react-native"
 import { useTheme } from "../../context/ThemeContext"
 import { useNavigation } from "@react-navigation/native"
 import { useDispatch, useSelector } from "react-redux"
 import { fetchUserAppointments } from "../../redux/slices/appointmentSlice"
 import { Calendar, Clock, Video, MessageCircle, Plus, CheckCircle, XCircle } from "lucide-react-native"
-
+import { collection, query, where, limit, getDocs } from "firebase/firestore"
+import { db } from "../../config/firebase"
 export default function AppointmentsScreen({ userId, userRole }) {
   const { isDark } = useTheme()
   const navigation = useNavigation()
@@ -19,6 +20,63 @@ export default function AppointmentsScreen({ userId, userRole }) {
 
   const appointments = useSelector((state) => state.appointments.appointments)
   const loading = useSelector((state) => state.appointments.loading)
+
+  const startChat = async (user) => {
+        try {
+          // Check if direct message channel already exists
+          const existingChannelQuery = query(
+            collection(db, "channels"),
+            where("type", "==", "direct"),
+            where("members", "array-contains", user.patientId),
+          )
+    
+          const snapshot = await getDocs(existingChannelQuery)
+    
+          const existingChannel = snapshot.docs.find((doc) => {
+            const data = doc.data()
+            return data.members.includes(user.id) && data.members.length === 2
+          })
+    
+          if (existingChannel) {
+            // Navigate to existing channel Appointments
+           
+            navigation.navigate("Chat", {
+                        screen: "Channel",
+                        params: {
+                          channelId: existingChannel.id,
+              channelName: user.displayName || user.name || user.id,
+                        },
+                      })
+            return
+          }
+    
+          // Create new channel
+          const channelData = {
+            name: user.displayName || user.name || user.id,
+            type: "direct",
+            members: [userId, user.id],
+            createdBy: userId,
+            createdAt: serverTimestamp(),
+            lastMessageAt: serverTimestamp(), // Initialize with creation time
+          }
+    
+          const channelRef = await addDoc(collection(db, "channels"), channelData)
+    
+          // Navigate to new channel
+          navigation.navigate("Channel", {
+            channelId: channelRef.id,
+            channelName: user.displayName || user.name || user.id,
+          })
+        } catch (error) {
+          console.error("Error starting chat:", error)
+          toast.show("Failed to start conversation", {
+            type: "danger",
+            placement: "top",
+            duration: 3000,
+          })
+        }
+      }
+
 
   useEffect(() => {
     loadAppointments()
@@ -104,8 +162,12 @@ export default function AppointmentsScreen({ userId, userRole }) {
   const renderAppointmentItem = ({ item }) => {
     const isPast = new Date(item.scheduledFor) < new Date() && item.status !== "completed"
     const otherPersonName = userRole === "professional" ? item.patientName : item.professionalName
-    const otherPersonId = userRole === "professional" ? item.patientId : item.professionalId
+    const otherPersonId = userRole === "professional" ? item.patientId : item.professionalId;
 
+const now = new Date();
+  const scheduled = new Date(item.scheduledFor);
+  const diffInMinutes = (scheduled - now) / (1000 * 60);
+  const canJoin = diffInMinutes <= 10 && diffInMinutes >= -30;
     return (
       <TouchableOpacity
         className={`mb-4 rounded-xl overflow-hidden ${isDark ? "bg-[#1E1E1E]" : "bg-[#F5F5F5]"}`}
@@ -139,7 +201,7 @@ export default function AppointmentsScreen({ userId, userRole }) {
             <View className="mb-3">
               <Text className={`text-sm ${isDark ? "text-white/70" : "text-black/70"}`}>
                 <Text className="font-medium">Reason: </Text>
-                {item.reason}
+                {item?.reason}
               </Text>
             </View>
           )}
@@ -147,34 +209,39 @@ export default function AppointmentsScreen({ userId, userRole }) {
           {item.status === "confirmed" && !isPast && (
             <View className="flex-row mt-2">
               <TouchableOpacity
-                className="bg-[#ea580c] py-2 px-4 rounded-lg mr-2 flex-row items-center"
-                onPress={() => {
-                  navigation.navigate("VideoCall", {
-                    appointmentId: item.id,
-                    channelId: `appointment-${item.id}`,
-                    callType: "video",
-                    participants: [item.patientId, item.professionalId],
-                    professionalId: item.professionalId,
-                    patientId: item.patientId,
-                    appointmentData: item,
-                  })
-                }}
-              >
-                <Video size={16} color="#FFFFFF" />
-                <Text className="text-white ml-1">Join</Text>
-              </TouchableOpacity>
+            className={`py-2 px-4 rounded-lg mr-2 flex-row items-center ${
+              canJoin ? "bg-[#ea580c]" : "bg-gray-400"
+            }`}
+            onPress={() => {
+              if (!canJoin) {
+                Alert.alert(
+                  "Error joining session",
+                  "You can only join within 10 minutes of the scheduled appointment."
+                );
+                return;
+              }
+              navigation.navigate("Call", {
+                callId: `${item.patientId}_${item.professionalId}`,
+                callType: "default",
+              });
+            }}
+            activeOpacity={canJoin ? 0.7 : 1} // keep it 'dead' if early
+          >
+            <Video size={16} color="#FFFFFF" />
+            <Text className="text-white ml-1">Join</Text>
+          </TouchableOpacity>
 
               <TouchableOpacity
                 className={`py-2 px-4 rounded-lg flex-row items-center ${isDark ? "bg-[#2C2C2C]" : "bg-white"}`}
-                onPress={() => {
-                  navigation.navigate("Chat", {
-                    screen: "Channel",
-                    params: {
-                      channelId: `appointment-chat-${item.id}`,
-                      channelName: otherPersonName,
-                    },
-                  })
+                 onPress={() => {
+              startChat({
+                id: item.professionalId,
+                patientId: item.patientId,
+                name: item.professionalName
+              })
                 }}
+
+                
               >
                 <MessageCircle size={16} color={isDark ? "#FFFFFF" : "#000000"} />
                 <Text className={`ml-1 ${isDark ? "text-white" : "text-black"}`}>Message</Text>
@@ -191,7 +258,7 @@ export default function AppointmentsScreen({ userId, userRole }) {
                 }}
               >
                 <CheckCircle size={16} color="#FFFFFF" />
-                <Text className="text-white ml-1">Confirm</Text>
+                <Text className="text-white ml-1">Accept</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -215,12 +282,14 @@ export default function AppointmentsScreen({ userId, userRole }) {
       <Calendar size={60} color={isDark ? "#FFFFFF40" : "#00000040"} />
       <Text className={`text-lg mt-4 ${isDark ? "text-white" : "text-black"}`}>No {activeTab} appointments</Text>
       {activeTab === "upcoming" && userRole === "patient" && (
-        <TouchableOpacity
+       <>
+        {/* <TouchableOpacity
           className="mt-4 bg-[#ea580c] py-2 px-4 rounded-lg"
           onPress={() => navigation.navigate("ProfessionalsList")}
         >
           <Text className="text-white">Book a Session</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
+       </>
       )}
     </View>
   )
@@ -294,6 +363,7 @@ export default function AppointmentsScreen({ userId, userRole }) {
           onPress={() => navigation.navigate("ProfessionalsList")}
         >
           <Plus size={24} color="#FFFFFF" />
+          
         </TouchableOpacity>
       )}
     </View>

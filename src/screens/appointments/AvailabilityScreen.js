@@ -19,7 +19,7 @@ export default function AvailabilityScreen() {
   const dispatch = useDispatch()
   const toast = useToast()
 
-  const { professionalId, professionalName, reason } = route.params
+  const { professionalId, professionalName, professionalEmail, reason } = route.params
   const [professional, setProfessional] = useState(null)
   const [loading, setLoading] = useState(true)
   const [selectedDate, setSelectedDate] = useState(new Date())
@@ -223,6 +223,7 @@ export default function AvailabilityScreen() {
     navigation.navigate("ConfirmAppointment", {
       professionalId,
       professionalName,
+      professionalEmail,
       reason,
       scheduledFor,
       timeSlot: selectedTimeSlot,

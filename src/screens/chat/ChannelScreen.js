@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   BackHandler,
+
   FlatList,
   TextInput,
   StatusBar,
@@ -38,7 +39,7 @@ import {
   getDocs,
 } from "firebase/firestore"
 import AsyncStorage from "@react-native-async-storage/async-storage"
-import { useCall } from "../../context/CallContext"
+// import { useCall } from "../../context/CallContext"
 
 const MESSAGES_PER_LOAD = 30
 
@@ -46,7 +47,7 @@ export default function ChannelScreen() {
   const navigation = useNavigation()
   const route = useRoute()
   const { isDark } = useTheme()
-  const { createCall } = useCall()
+  // const { createCall } = useCall()
   const { channelId, channelName, otherUserId } = route.params
   const [loading, setLoading] = useState(true)
   const [messages, setMessages] = useState([])
@@ -354,7 +355,7 @@ export default function ChannelScreen() {
     if (isDirectMessage && otherUser) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
 
-      const call = await createCall(otherUser.id, otherUser.name, "video", { channelId })
+      // const call = await createCall(otherUser.id, otherUser.name, "video", { channelId })
 
       if (call) {
         navigation.navigate("VideoCall", {
@@ -372,7 +373,7 @@ export default function ChannelScreen() {
     if (isDirectMessage && otherUser) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
 
-      const call = await createCall(otherUser.id, otherUser.name, "audio", { channelId })
+      // const call = await createCall(otherUser.id, otherUser.name, "audio", { channelId })
 
       if (call) {
         navigation.navigate("VideoCall", {
@@ -580,7 +581,7 @@ export default function ChannelScreen() {
 
     return (
       <View className="py-4 flex items-center justify-center">
-        <ActivityIndicator size="small" color={isDark ? "#FFFFFF" : "#005FFF"} />
+        <ActivityIndicator size="small" color={isDark ? "#FFFFFF" : "#ea580c"} />
       </View>
     )
   }
@@ -588,13 +589,13 @@ export default function ChannelScreen() {
   if (loading) {
     return (
       <View className={`flex-1 justify-center items-center ${isDark ? "bg-[#121212]" : "bg-white"}`}>
-        <ActivityIndicator size="large" color="#005FFF" />
+        <ActivityIndicator size="large" color="#ea580c" />
       </View>
     )
   }
 
   return (
-    <SafeAreaView className={`flex-1 mt-10 ${isDark ? "bg-[#121212]" : "bg-white"}`}>
+    <SafeAreaView className={`flex-1 mt-2 ${isDark ? "bg-[#121212]" : "bg-white"}`}>
       <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
 
       {/* Header */}
@@ -603,24 +604,32 @@ export default function ChannelScreen() {
       >
         <TouchableOpacity
           className="flex-row items-center"
-          onPress={() => navigation.goBack()}
+          onPress={() => 
+            navigation.navigate("Chat", {
+                    screen: "ChannelList"})
+          
+          }
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <ArrowLeft size={20} color={isDark ? "#FFFFFF" : "#000000"} />
-          <Text className={`ml-2 font-medium ${isDark ? "text-white" : "text-black"}`}>Back</Text>
+          <ArrowLeft size={28} color={isDark ? "#FFFFFF" : "#000000"} />
+          {/* <Text className={`ml-2 font-medium ${isDark ? "text-white" : "text-black"}`}>Back</Text> */}
         </TouchableOpacity>
 
         <TouchableOpacity className="flex-row items-center" onPress={viewUserProfile} disabled={!isDirectMessage}>
           <Text className={`text-lg font-bold ${isDark ? "text-white" : "text-black"}`}>{displayName}</Text>
-          {isDirectMessage && otherUser && (
-            <Text className={`text-xs ml-1 ${isDark ? "text-gray-400" : "text-gray-500"}`}>
-              {readStatus[otherUser.id] ? "online" : ""}
-            </Text>
-          )}
+         
         </TouchableOpacity>
 
-        <View className="flex-row">
-          {isDirectMessage && (
+        <View >
+           {isDirectMessage && otherUser && (
+           
+            <View className='h-4 w-8'>
+ {/* <Text className={`text-xs ml-1 ${isDark ? "text-gray-400" : "text-gray-500"}`}>
+              {readStatus[otherUser.id] ? "" : ""}
+            </Text> */}
+              </View>
+          )}
+          {/* {isDirectMessage && (
             <>
               <TouchableOpacity
                 className="w-10 h-10 rounded-full justify-center items-center ml-2"
@@ -630,20 +639,20 @@ export default function ChannelScreen() {
               </TouchableOpacity>
 
               <TouchableOpacity
-                className="w-10 h-10 rounded-full bg-[#005FFF] justify-center items-center ml-2"
+                className="w-10 h-10 rounded-full bg-[#ea580c] justify-center items-center ml-2"
                 onPress={startVoiceCall}
               >
                 <Phone color="#FFFFFF" size={20} />
               </TouchableOpacity>
 
               <TouchableOpacity
-                className="w-10 h-10 rounded-full bg-[#005FFF] justify-center items-center ml-2"
+                className="w-10 h-10 rounded-full bg-[#ea580c] justify-center items-center ml-2"
                 onPress={startVideoCall}
               >
                 <Video color="#FFFFFF" size={20} />
               </TouchableOpacity>
             </>
-          )}
+          )} */}
         </View>
       </View>
 
@@ -736,7 +745,7 @@ export default function ChannelScreen() {
           />
           <TouchableOpacity
             className={`w-12 h-12 rounded-full justify-center items-center ${
-              messageText.trim() ? "bg-[#00A884]" : isDark ? "bg-gray-700" : "bg-gray-300"
+              messageText.trim() ? "bg-[#ea580c]" : isDark ? "bg-gray-700" : "bg-gray-300"
             }`}
             onPress={sendMessage}
             disabled={!messageText.trim() || isSending}

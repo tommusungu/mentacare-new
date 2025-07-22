@@ -1,5 +1,5 @@
 "use client"
-import { View, Text, StyleSheet, Dimensions } from "react-native"
+import { View, Text, StyleSheet, Dimensions, StatusBar } from "react-native"
 import { useNetInfo } from "@react-native-community/netinfo"
 import { useTheme } from "../context/ThemeContext"
 import { WifiOff } from "lucide-react-native"
@@ -17,6 +17,8 @@ export default function OfflineNotice() {
 
   return (
     <View style={[styles.container, { backgroundColor: isDark ? "#FF3B30" : "#FF3B30" }]}>
+      <StatusBar  barStyle={"light-content"}
+        backgroundColor={"#FF3B30"}/>
       <WifiOff color="#FFFFFF" size={16} />
       <Text style={styles.text}>No Internet Connection</Text>
     </View>
@@ -33,6 +35,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     padding: 10,
+    
   },
   text: {
     color: "#FFFFFF",

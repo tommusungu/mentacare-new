@@ -1,18 +1,26 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator } from "react-native"
+import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Image } from "react-native"
 import { useTheme } from "../../context/ThemeContext"
 import { useNavigation } from "@react-navigation/native"
 import { useDispatch } from "react-redux"
 import { useToast } from "react-native-toast-notifications"
-import { User, Settings, Edit, Calendar, Star, Shield, HelpCircle, Info, Bell } from "lucide-react-native"
+import { User, Settings, Edit, Calendar, Star, Shield, HelpCircle, Info, Bell, ChevronRight } from "lucide-react-native"
+import YourStats from "../../components/YourStats"
 
 export default function ProfileScreen({ userId, userRole, userData }) {
   const { isDark } = useTheme()
   const navigation = useNavigation()
   const dispatch = useDispatch()
   const toast = useToast()
+
+  const baseUrl = "https://ui-avatars.com/api/";
+    const initials = encodeURIComponent(userData?.name || "User");
+    const [profileImage, setProfileImage] = useState(
+      userData?.photoURL || `${baseUrl}?name=${initials}&background=0D47A1&color=fff`
+    );
+  
 
   const [loading, setLoading] = useState(false)
   const [stats, setStats] = useState({
@@ -32,7 +40,7 @@ export default function ProfileScreen({ userId, userRole, userData }) {
           totalSessions: 12,
           completedSessions: 8,
           upcomingSessions: 4,
-          averageRating: 4.8,
+          averageRating: 0,
         })
       } catch (error) {
         console.error("Error fetching user stats:", error)
@@ -52,9 +60,13 @@ export default function ProfileScreen({ userId, userRole, userData }) {
   const renderPatientProfile = () => (
     <>
       <View className="items-center mb-6">
-        <View className="w-24 h-24 rounded-full bg-[#ea580c] justify-center items-center">
+        {/* <View className="w-24 h-24 rounded-full bg-[#ea580c] justify-center items-center">
           <Text className="text-white text-3xl font-bold">{userData?.name ? userData.name[0].toUpperCase() : "?"}</Text>
-        </View>
+        </View> */}
+        <Image
+                  source={{ uri: profileImage }}
+                  className="w-24 h-24 rounded-full "
+                />
 
         <Text className={`text-2xl font-bold mt-4 ${isDark ? "text-white" : "text-black"}`}>{userData?.name}</Text>
 
@@ -70,22 +82,8 @@ export default function ProfileScreen({ userId, userRole, userData }) {
       </View>
 
       <View className="mb-6">
-        <Text className={`text-lg font-bold mb-2 ${isDark ? "text-white" : "text-black"}`}>Your Stats</Text>
-
-        <View className="flex-row justify-between">
-          <View className={`p-4 rounded-xl flex-1 mr-2 ${isDark ? "bg-[#1E1E1E]" : "bg-[#F5F5F5]"}`}>
-            <Text className={`text-xs ${isDark ? "text-white/70" : "text-black/70"}`}>Total Sessions</Text>
-            <Text className={`text-xl font-bold ${isDark ? "text-white" : "text-black"}`}>{stats.totalSessions}</Text>
-          </View>
-
-          <View className={`p-4 rounded-xl flex-1 ml-2 ${isDark ? "bg-[#1E1E1E]" : "bg-[#F5F5F5]"}`}>
-            <Text className={`text-xs ${isDark ? "text-white/70" : "text-black/70"}`}>Upcoming</Text>
-            <Text className={`text-xl font-bold ${isDark ? "text-white" : "text-black"}`}>
-              {stats.upcomingSessions}
-            </Text>
-          </View>
+          <YourStats isDark={isDark}/>
         </View>
-      </View>
 
       <View className="mb-6">
         <Text className={`text-lg font-bold mb-2 ${isDark ? "text-white" : "text-black"}`}>Personal Information</Text>
@@ -126,10 +124,13 @@ export default function ProfileScreen({ userId, userRole, userData }) {
   const renderProfessionalProfile = () => (
     <>
       <View className="items-center mb-6">
-        <View className="w-24 h-24 rounded-full bg-[#ea580c] justify-center items-center">
+        {/* <View className="w-24 h-24 rounded-full bg-[#ea580c] justify-center items-center">
           <Text className="text-white text-3xl font-bold">{userData?.name ? userData.name[0].toUpperCase() : "?"}</Text>
-        </View>
-
+        </View> */}
+<Image
+                  source={{ uri: profileImage }}
+                  className="w-24 h-24 rounded-full "
+                />
         <Text className={`text-2xl font-bold mt-4 ${isDark ? "text-white" : "text-black"}`}>{userData?.name}</Text>
 
         <Text className={`text-base ${isDark ? "text-white/70" : "text-black/70"}`}>
@@ -141,6 +142,27 @@ export default function ProfileScreen({ userId, userRole, userData }) {
           <Text className={`ml-1 ${isDark ? "text-white" : "text-black"}`}>{stats.averageRating} Rating</Text>
         </View>
 
+        <View className="flex-row items-center mt-2">
+ 
+
+  <View
+    className={` px-2 py-0.5 border rounded-full ${
+      userData?.isVerified
+        ? "bg-green-200 border-green-300" 
+        : "bg-red-200 border-red-300"
+    }`}
+  >
+    <Text
+      className={`text-sm font-semibold ${
+        userData?.isVerified ? "text-green-700" : "text-red-700"
+      }`}
+    >
+      {userData?.isVerified ? "Approved" : "Pending approval"}
+    </Text>
+  </View>
+</View>
+
+
         <TouchableOpacity
           className="mt-4 flex-row items-center bg-[#ea580c] px-4 py-2 rounded-lg"
           onPress={() => navigation.navigate("EditProfile")}
@@ -151,47 +173,28 @@ export default function ProfileScreen({ userId, userRole, userData }) {
       </View>
 
       <View className="mb-6">
-        <Text className={`text-lg font-bold mb-2 ${isDark ? "text-white" : "text-black"}`}>Your Stats</Text>
-
-        <View className="flex-row justify-between mb-2">
-          <View className={`p-4 rounded-xl flex-1 mr-2 ${isDark ? "bg-[#1E1E1E]" : "bg-[#F5F5F5]"}`}>
-            <Text className={`text-xs ${isDark ? "text-white/70" : "text-black/70"}`}>Total Sessions</Text>
-            <Text className={`text-xl font-bold ${isDark ? "text-white" : "text-black"}`}>{stats.totalSessions}</Text>
-          </View>
-
-          <View className={`p-4 rounded-xl flex-1 ml-2 ${isDark ? "bg-[#1E1E1E]" : "bg-[#F5F5F5]"}`}>
-            <Text className={`text-xs ${isDark ? "text-white/70" : "text-black/70"}`}>Completed</Text>
-            <Text className={`text-xl font-bold ${isDark ? "text-white" : "text-black"}`}>
-              {stats.completedSessions}
-            </Text>
-          </View>
+        <View className="">
+          <YourStats isDark={isDark}/>
         </View>
 
-        <View className="flex-row justify-between">
-          <View className={`p-4 rounded-xl flex-1 mr-2 ${isDark ? "bg-[#1E1E1E]" : "bg-[#F5F5F5]"}`}>
-            <Text className={`text-xs ${isDark ? "text-white/70" : "text-black/70"}`}>Upcoming</Text>
-            <Text className={`text-xl font-bold ${isDark ? "text-white" : "text-black"}`}>
-              {stats.upcomingSessions}
-            </Text>
-          </View>
 
-          <View className={`p-4 rounded-xl flex-1 ml-2 ${isDark ? "bg-[#1E1E1E]" : "bg-[#F5F5F5]"}`}>
-            <Text className={`text-xs ${isDark ? "text-white/70" : "text-black/70"}`}>Rating</Text>
-            <View className="flex-row items-center">
-              <Text className={`text-xl font-bold mr-1 ${isDark ? "text-white" : "text-black"}`}>
-                {stats.averageRating}
-              </Text>
-              <Star size={16} color="#FFD700" fill="#FFD700" />
-            </View>
-          </View>
-        </View>
 
-        <TouchableOpacity
+        {/* <TouchableOpacity
           className="mt-4 flex-row items-center justify-center bg-[#1E1E1E] p-3 rounded-lg"
           onPress={() => navigation.navigate("ProfessionalStats")}
         >
           <Text className={`${isDark ? "text-white" : "text-white"}`}>View Detailed Stats</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
+        <TouchableOpacity
+                                  className="mt-4 flex-1 bg-[#ea580c] p-3 rounded-lg flex-row items-center justify-center gap-2"
+                                              onPress={() => navigation.navigate("AvailabilitySettings")}
+
+                                >
+                                  <Calendar size={16} color={isDark ? "#FFFFFF" : "#FFFFFF"} />
+                                  <Text className={` ${isDark ? "text-white" : "text-white"}`}>Manage Availability</Text>
+                                
+                                
+                                </TouchableOpacity>
       </View>
 
       <View className="mb-6">
@@ -221,68 +224,99 @@ export default function ProfileScreen({ userId, userRole, userData }) {
             </View>
           )}
 
-          <TouchableOpacity
-            className="mt-2 flex-row items-center"
-            onPress={() => navigation.navigate("AvailabilitySettings")}
-          >
-            <Calendar size={16} color={isDark ? "#FFFFFF" : "#000000"} />
-            <Text className={`ml-2 ${isDark ? "text-white" : "text-black"}`}>Manage Availability</Text>
-          </TouchableOpacity>
+          
+          
         </View>
       </View>
     </>
   )
 
   const renderSettingsOptions = () => (
+   <View className={`flex-1 ${isDark ? "bg-[#121212]" : "bg-white"}`}>
     <View className="mb-6">
-      <Text className={`text-lg font-bold mb-2 ${isDark ? "text-white" : "text-black"}`}>Settings</Text>
+      <Text className={`text-lg font-bold px-6 mb-2 ${isDark ? "text-white" : "text-black"}`}>Settings</Text>
 
-      <View className={`rounded-xl overflow-hidden ${isDark ? "bg-[#1E1E1E]" : "bg-[#F5F5F5]"}`}>
-        <TouchableOpacity
-          className="flex-row items-center p-4 border-b border-gray-700"
-          onPress={() => navigation.navigate("Settings")}
-        >
-          <Settings size={20} color={isDark ? "#FFFFFF" : "#000000"} />
-          <Text className={`ml-3 ${isDark ? "text-white" : "text-black"}`}>Settings</Text>
-        </TouchableOpacity>
+      
+       <TouchableOpacity
+  className={`flex-row items-center py-5 px-4 border-b ${isDark ? "border-[#2C2C2C]" : "border-[#E0E0E0]"}`}
+  onPress={() => navigation.navigate("Settings")}
+>
+  <View className="w-10 justify-center items-center">
+    <Settings size={20} color={isDark ? "#FFFFFF" : "#000000"} />
+  </View>
+  <View className="flex-1 ml-3">
+    <Text className={`text-base font-medium ${isDark ? "text-white" : "text-black"}`}>Settings</Text>
+  </View>
+  <ChevronRight size={20} color={isDark ? "#FFFFFF80" : "#00000080"} />
+</TouchableOpacity>
 
-        <TouchableOpacity
-          className="flex-row items-center p-4 border-b border-gray-700"
-          onPress={() => navigation.navigate("ThemeSettings")}
-        >
-          <User size={20} color={isDark ? "#FFFFFF" : "#000000"} />
-          <Text className={`ml-3 ${isDark ? "text-white" : "text-black"}`}>Theme</Text>
-        </TouchableOpacity>
+<TouchableOpacity
+  className={`flex-row items-center py-5 px-4 border-b ${isDark ? "border-[#2C2C2C]" : "border-[#E0E0E0]"}`}
+  onPress={() => navigation.navigate("ThemeSettings")}
+>
+  <View className="w-10 justify-center items-center">
+    <User size={20} color={isDark ? "#FFFFFF" : "#000000"} />
+  </View>
+  <View className="flex-1 ml-3">
+    <Text className={`text-base font-medium ${isDark ? "text-white" : "text-black"}`}>Theme</Text>
+  </View>
+  <ChevronRight size={20} color={isDark ? "#FFFFFF80" : "#00000080"} />
+</TouchableOpacity>
 
-        <TouchableOpacity
-          className="flex-row items-center p-4 border-b border-gray-700"
-          onPress={() => navigation.navigate("NotificationSettings")}
-        >
-          <Bell size={20} color={isDark ? "#FFFFFF" : "#000000"} />
-          <Text className={`ml-3 ${isDark ? "text-white" : "text-black"}`}>Notifications</Text>
-        </TouchableOpacity>
+<TouchableOpacity
+  className={`flex-row items-center py-5 px-4 border-b ${isDark ? "border-[#2C2C2C]" : "border-[#E0E0E0]"}`}
+  onPress={() => navigation.navigate("NotificationSettings")}
+>
+  <View className="w-10 justify-center items-center">
+    <Bell size={20} color={isDark ? "#FFFFFF" : "#000000"} />
+  </View>
+  <View className="flex-1 ml-3">
+    <Text className={`text-base font-medium ${isDark ? "text-white" : "text-black"}`}>Notifications</Text>
+  </View>
+  <ChevronRight size={20} color={isDark ? "#FFFFFF80" : "#00000080"} />
+</TouchableOpacity>
 
-        <TouchableOpacity
-          className="flex-row items-center p-4 border-b border-gray-700"
-          onPress={() => navigation.navigate("PrivacySettings")}
-        >
-          <Shield size={20} color={isDark ? "#FFFFFF" : "#000000"} />
-          <Text className={`ml-3 ${isDark ? "text-white" : "text-black"}`}>Privacy</Text>
-        </TouchableOpacity>
+<TouchableOpacity
+  className={`flex-row items-center py-5 px-4 border-b ${isDark ? "border-[#2C2C2C]" : "border-[#E0E0E0]"}`}
+  onPress={() => navigation.navigate("PrivacySettings")}
+>
+  <View className="w-10 justify-center items-center">
+    <Shield size={20} color={isDark ? "#FFFFFF" : "#000000"} />
+  </View>
+  <View className="flex-1 ml-3">
+    <Text className={`text-base font-medium ${isDark ? "text-white" : "text-black"}`}>Privacy</Text>
+  </View>
+  <ChevronRight size={20} color={isDark ? "#FFFFFF80" : "#00000080"} />
+</TouchableOpacity>
 
-        <TouchableOpacity
-          className="flex-row items-center p-4 border-b border-gray-700"
-          onPress={() => navigation.navigate("HelpSupport")}
-        >
-          <HelpCircle size={20} color={isDark ? "#FFFFFF" : "#000000"} />
-          <Text className={`ml-3 ${isDark ? "text-white" : "text-black"}`}>Help & Support</Text>
-        </TouchableOpacity>
+<TouchableOpacity
+  className={`flex-row items-center py-5 px-4 border-b ${isDark ? "border-[#2C2C2C]" : "border-[#E0E0E0]"}`}
+  onPress={() => navigation.navigate("HelpSupport")}
+>
+  <View className="w-10 justify-center items-center">
+    <HelpCircle size={20} color={isDark ? "#FFFFFF" : "#000000"} />
+  </View>
+  <View className="flex-1 ml-3">
+    <Text className={`text-base font-medium ${isDark ? "text-white" : "text-black"}`}>Help & Support</Text>
+  </View>
+  <ChevronRight size={20} color={isDark ? "#FFFFFF80" : "#00000080"} />
+</TouchableOpacity>
 
-        <TouchableOpacity className="flex-row items-center p-4" onPress={() => navigation.navigate("About")}>
-          <Info size={20} color={isDark ? "#FFFFFF" : "#000000"} />
-          <Text className={`ml-3 ${isDark ? "text-white" : "text-black"}`}>About</Text>
-        </TouchableOpacity>
-      </View>
+<TouchableOpacity
+  className={`flex-row items-center py-5 px-4 border-b ${isDark ? "border-[#2C2C2C]" : "border-[#E0E0E0]"}`}
+  onPress={() => navigation.navigate("About")}
+>
+  <View className="w-10 justify-center items-center">
+    <Info size={20} color={isDark ? "#FFFFFF" : "#000000"} />
+  </View>
+  <View className="flex-1 ml-3">
+    <Text className={`text-base font-medium ${isDark ? "text-white" : "text-black"}`}>About</Text>
+  </View>
+  <ChevronRight size={20} color={isDark ? "#FFFFFF80" : "#00000080"} />
+</TouchableOpacity>
+
+      
+    </View>
     </View>
   )
 
@@ -290,17 +324,26 @@ export default function ProfileScreen({ userId, userRole, userData }) {
     return (
       <View className={`flex-1 justify-center items-center ${isDark ? "bg-[#121212]" : "bg-white"}`}>
         <ActivityIndicator size="large" color="#ea580c" />
-        <Text className={`mt-4 text-base ${isDark ? "text-white" : "text-black"}`}>Loading profile...</Text>
+        {/* <Text className={`mt-4 text-base ${isDark ? "text-white" : "text-black"}`}>Loading profile...</Text> */}
       </View>
     )
   }
 
   return (
     <ScrollView className={`flex-1 ${isDark ? "bg-[#121212]" : "bg-white"}`}>
-      <View className="p-6">
+      <View className="py-6">
+        <View className="px-5">
         {userRole === "patient" ? renderPatientProfile() : renderProfessionalProfile()}
+
+        </View>
+
         {renderSettingsOptions()}
+
+        <Text className={`text-center text-sm ${isDark ? "text-white/50" : "text-black/50"}`}>
+          © {new Date().getFullYear()} Mentacare. All rights reserved.
+        </Text>
       </View>
+       
     </ScrollView>
   )
 }

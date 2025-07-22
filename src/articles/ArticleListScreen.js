@@ -19,6 +19,15 @@ import { collection, query, getDocs, where, limit } from "firebase/firestore"
 import { useTheme } from "../context/ThemeContext"
 import { TouchableRipple } from "react-native-paper"
 
+const shuffleArray = (array) => {
+  const shuffled = [...array]
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+  }
+  return shuffled
+}
+
 const ArticleListScreen = () => {
   const { isDark } = useTheme()
   const navigation = useNavigation()
@@ -65,7 +74,12 @@ const ArticleListScreen = () => {
         if (data.category) uniqueCategories.add(data.category)
       })
 
-      setArticles(articlesData)
+
+      const shuffledArticles = shuffleArray(articlesData)
+        
+      setArticles(shuffledArticles)
+
+
       setCategories(Array.from(uniqueCategories))
     } catch (error) {
       console.error("Error fetching articles:", error)
@@ -137,7 +151,7 @@ const ArticleListScreen = () => {
       <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
 
       {/* Header */}
-      <View className="flex-row items-center p-4 pt-12 border-b border-gray-200 dark:border-gray-400">
+      <View className="flex-row items-center p-4 border-b border-gray-200 dark:border-gray-400">
         <TouchableOpacity onPress={() => navigation.goBack()} className="mr-4">
           <ArrowLeft size={24} color={isDark ? "#FFFFFF" : "#000000"} />
         </TouchableOpacity>

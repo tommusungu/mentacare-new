@@ -15,7 +15,7 @@ export default function AvailabilitySettingsScreen({userData}) {
   const toast = useToast()
 
   const currentUser =  useSelector((state) => state.user.currentUser) || userData.uid
-  console.log('currentUser: ', userData)
+  // console.log('currentUser: ', userData)
 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -30,7 +30,7 @@ export default function AvailabilitySettingsScreen({userData}) {
   })
   const [activeDay, setActiveDay] = useState("monday")
   const [showTimeSelector, setShowTimeSelector] = useState(false)
-  const [selectedTime, setSelectedTime] = useState("09:00")
+  const [selectedTimes, setSelectedTimes] = useState([]) // Changed from selectedTime to selectedTimes array
 
   useEffect(() => {
     const fetchAvailability = async () => {
@@ -99,53 +99,80 @@ export default function AvailabilitySettingsScreen({userData}) {
     }
   }
 
-  const addTimeSlot = () => {
-    if (!selectedTime) return
+  const addTimeSlots = () => {
+    if (selectedTimes.length === 0) return
 
-    // Check if time already exists
-    if (availability[activeDay].includes(selectedTime)) {
-      toast.show("This time slot already exists", {
+    const existingTimes = availability[activeDay]
+    const newTimesToAdd = []
+    const duplicates = []
+    const overlaps = []
+
+    selectedTimes.forEach(selectedTime => {
+      // Check if time already exists
+      if (existingTimes.includes(selectedTime)) {
+        duplicates.push(selectedTime)
+        return
+      }
+
+      // Check for overlapping time slots (30-minute intervals)
+      const [hours, minutes] = selectedTime.split(":").map(Number)
+      const selectedTimeMinutes = hours * 60 + minutes
+
+      const hasOverlap = existingTimes.some(existingTime => {
+        const [existingHours, existingMinutes] = existingTime.split(":").map(Number)
+        const existingTimeMinutes = existingHours * 60 + existingMinutes
+        
+        // Check if the new time slot overlaps with any existing slot
+        // (considering 30-minute intervals)
+        return Math.abs(selectedTimeMinutes - existingTimeMinutes) < 30
+      })
+
+      if (hasOverlap) {
+        overlaps.push(selectedTime)
+        return
+      }
+
+      newTimesToAdd.push(selectedTime)
+    })
+
+    // Show warnings for duplicates and overlaps
+    if (duplicates.length > 0) {
+      toast.show(`${duplicates.length} time slot(s) already exist`, {
         type: "warning",
         placement: "top",
         duration: 2000,
       })
-      return
     }
 
-    // Check for overlapping time slots (30-minute intervals)
-    const [hours, minutes] = selectedTime.split(":").map(Number)
-    const selectedTimeMinutes = hours * 60 + minutes
-
-    const hasOverlap = availability[activeDay].some(existingTime => {
-      const [existingHours, existingMinutes] = existingTime.split(":").map(Number)
-      const existingTimeMinutes = existingHours * 60 + existingMinutes
-      
-      // Check if the new time slot overlaps with any existing slot
-      // (considering 30-minute intervals)
-      return Math.abs(selectedTimeMinutes - existingTimeMinutes) < 30
-    })
-
-    if (hasOverlap) {
-      toast.show("This time slot overlaps with an existing slot", {
+    if (overlaps.length > 0) {
+      toast.show(`${overlaps.length} time slot(s) overlap with existing slots`, {
         type: "warning",
         placement: "top",
         duration: 2000,
       })
-      return
     }
 
-    // Add time and sort
-    const newTimes = [...availability[activeDay], selectedTime].sort((a, b) => {
-      const [aHours, aMinutes] = a.split(":").map(Number)
-      const [bHours, bMinutes] = b.split(":").map(Number)
-      return (aHours * 60 + aMinutes) - (bHours * 60 + bMinutes)
-    })
+    if (newTimesToAdd.length > 0) {
+      // Add new times and sort
+      const allTimes = [...existingTimes, ...newTimesToAdd].sort((a, b) => {
+        const [aHours, aMinutes] = a.split(":").map(Number)
+        const [bHours, bMinutes] = b.split(":").map(Number)
+        return (aHours * 60 + aMinutes) - (bHours * 60 + bMinutes)
+      })
 
-    setAvailability({
-      ...availability,
-      [activeDay]: newTimes,
-    })
+      setAvailability({
+        ...availability,
+        [activeDay]: allTimes,
+      })
 
+      toast.show(`${newTimesToAdd.length} time slot(s) added. Click save availability to complete.`, {
+        type: "normal",
+        placement: "top",
+        duration: 2000,
+      })
+    }
+
+    setSelectedTimes([]) // Clear selection
     setShowTimeSelector(false)
   }
 
@@ -154,6 +181,16 @@ export default function AvailabilitySettingsScreen({userData}) {
     setAvailability({
       ...availability,
       [day]: newTimes,
+    })
+  }
+
+  const toggleTimeSelection = (time) => {
+    setSelectedTimes(prev => {
+      if (prev.includes(time)) {
+        return prev.filter(t => t !== time)
+      } else {
+        return [...prev, time]
+      }
     })
   }
 
@@ -270,7 +307,7 @@ export default function AvailabilitySettingsScreen({userData}) {
 
         <View className={`p-4 rounded-xl ${isDark ? "bg-[#1E1E1E]" : "bg-[#F5F5F5]"}`}>
           <Text className={`text-sm ${isDark ? "text-white/70" : "text-black/70"}`}>
-            Tip: Patients will be able to book 30-minute sessions starting at the times you set. Make sure to leave
+            Tip: Patients willl be able to book 30-minute sessions starting at the times you set. Make sure to leave
             enough buffer time between sessions.
           </Text>
         </View>
@@ -280,31 +317,59 @@ export default function AvailabilitySettingsScreen({userData}) {
         <View className="absolute inset-0 bg-black/50 justify-center items-center">
           <View className={`w-[90%] rounded-xl p-4 ${isDark ? "bg-[#1E1E1E]" : "bg-white"}`}>
             <Text className={`text-lg font-bold mb-4 text-center ${isDark ? "text-white" : "text-black"}`}>
-              Select Time
+              Select Time Slots
             </Text>
+
+            {selectedTimes.length > 0 && (
+              <Text className={`text-sm mb-2 text-center ${isDark ? "text-white/70" : "text-black/70"}`}>
+                {selectedTimes.length} time slot{selectedTimes.length > 1 ? 's' : ''} selected
+              </Text>
+            )}
 
             <ScrollView className="max-h-[300px] mb-4">
               <View className="flex-row flex-wrap justify-between">
-                {generateTimeOptions().map((time, index) => (
-                  <TouchableOpacity
-                    key={index}
-                    className={`w-[30%] py-2 px-3 rounded-lg mb-2 items-center ${
-                      selectedTime === time ? "bg-[#ea580c]" : isDark ? "bg-[#2C2C2C]" : "bg-[#F5F5F5]"
-                    }`}
-                    onPress={() => setSelectedTime(time)}
-                  >
-                    <Text className={`${selectedTime === time ? "text-white" : isDark ? "text-white" : "text-black"}`}>
-                      {formatTime(time)}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+                {generateTimeOptions().map((time, index) => {
+                  const isSelected = selectedTimes.includes(time)
+                  const isExisting = availability[activeDay].includes(time)
+                  
+                  return (
+                    <TouchableOpacity
+                      key={index}
+                      className={`w-[30%] py-2 px-3 rounded-lg mb-2 items-center ${
+                        isSelected 
+                          ? "bg-[#ea580c]" 
+                          : isExisting 
+                            ? "bg-green-600" 
+                            : isDark ? "bg-[#2C2C2C]" : "bg-[#F5F5F5]"
+                      }`}
+                      onPress={() => !isExisting && toggleTimeSelection(time)}
+                      disabled={isExisting}
+                    >
+                      <Text className={`${
+                        isSelected 
+                          ? "text-white" 
+                          : isExisting 
+                            ? "text-white" 
+                            : isDark ? "text-white" : "text-black"
+                      }`}>
+                        {formatTime(time)}
+                      </Text>
+                      {/* {isExisting && (
+                        <Text className="text-xs text-gray-500 mt-1">Added</Text>
+                      )} */}
+                    </TouchableOpacity>
+                  )
+                })}
               </View>
             </ScrollView>
 
             <View className="flex-row justify-between">
               <TouchableOpacity
                 className="flex-1 h-12 rounded-lg justify-center items-center border border-[#FF3B30] mr-2"
-                onPress={() => setShowTimeSelector(false)}
+                onPress={() => {
+                  setSelectedTimes([])
+                  setShowTimeSelector(false)
+                }}
               >
                 <View className="flex-row items-center">
                   <X size={20} color="#FF3B30" />
@@ -313,12 +378,17 @@ export default function AvailabilitySettingsScreen({userData}) {
               </TouchableOpacity>
 
               <TouchableOpacity
-                className="flex-1 h-12 rounded-lg justify-center items-center bg-[#ea580c] ml-2"
-                onPress={addTimeSlot}
+                className={`flex-1 h-12 rounded-lg justify-center items-center ml-2 ${
+                  selectedTimes.length > 0 ? "bg-[#ea580c]" : "bg-gray-400"
+                }`}
+                onPress={addTimeSlots}
+                disabled={selectedTimes.length === 0}
               >
                 <View className="flex-row items-center">
                   <Check size={20} color="#FFFFFF" />
-                  <Text className="text-white text-base font-bold ml-2">Add</Text>
+                  <Text className="text-white text-base font-bold ml-2">
+                    Add {selectedTimes.length > 0 ? `(${selectedTimes.length})` : ''}
+                  </Text>
                 </View>
               </TouchableOpacity>
             </View>
@@ -328,4 +398,3 @@ export default function AvailabilitySettingsScreen({userData}) {
     </View>
   )
 }
-

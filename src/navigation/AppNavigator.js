@@ -5,6 +5,8 @@ import { useTheme } from "../context/ThemeContext"
 import { useChat } from "../context/ChatContext"
 import { useNotifications } from "../context/NotificationContext"
 import { MessageCircle, Calendar, User, Bell, Home, HomeIcon } from "lucide-react-native"
+import { useEffect } from "react"
+import { useSelector, useDispatch } from "react-redux"
 
 // Screens - Main Tabs
 import HomeScreen from "../screens/HomeScreen"
@@ -14,10 +16,8 @@ import ProfileNavigator from "./ProfileNavigator"
 import NotificationsScreen from "../screens/NotificationsScreen"
 
 // Screens - Common
-import VideoCallScreen from "../screens/VideoCallScreen"
 import SessionDetailsScreen from "../screens/SessionDetailsScreen"
 import SessionNotesScreen from "../screens/SessionNotesScreen"
-import UserProfileScreen from "../screens/UserProfileScreen"
 import SettingsScreen from "../screens/SettingsScreen"
 // AI Assistant
 import SerenityAIScreen from "../screens/SerenityAIScreen"
@@ -25,6 +25,9 @@ import SerenityAIScreen from "../screens/SerenityAIScreen"
 // Add these imports if they don't exist
 import ArticleListScreen from "../articles/ArticleListScreen"
 import ArticleScreen from "../articles/ArticleScreen"
+import { setUser } from "../redux/slices/userSlice"
+import VoiceCallPage from "../calls/call_page"
+import VideoCallScreen from "../screens/VideoCallScreen"
 
 const Tab = createBottomTabNavigator()
 const Stack = createNativeStackNavigator()
@@ -33,6 +36,7 @@ const MainTabs = ({ userId, userRole, userData, onLogout }) => {
   const { isDark } = useTheme()
   const { unreadCount } = useChat()
   const { hasUnread } = useNotifications()
+  
 
   return (
     <Tab.Navigator
@@ -71,13 +75,22 @@ const MainTabs = ({ userId, userRole, userData, onLogout }) => {
       </Tab.Screen>
 
       <Tab.Screen
-        name="Appointments"
-        options={{
-          tabBarIcon: ({ color, size }) => <Calendar size={size} color={color} />,
-        }}
-      >
-        {() => <AppointmentsNavigator userId={userId} userRole={userRole} />}
-      </Tab.Screen>
+  name="Appointments"
+  options={{
+    tabBarIcon: ({ color, size }) => <Calendar size={size} color={color} />,
+  }}
+  listeners={({ navigation }) => ({
+    tabPress: (e) => {
+      e.preventDefault()
+      navigation.navigate("Appointments", {
+        screen: "AppointmentsList", // Reset to the root of the stack
+      })
+    },
+  })}
+>
+  {() => <AppointmentsNavigator userId={userId} userRole={userRole} />}
+</Tab.Screen>
+
 
       {/* <Tab.Screen
         name="Notifications"
@@ -94,6 +107,16 @@ const MainTabs = ({ userId, userRole, userData, onLogout }) => {
         options={{
           tabBarIcon: ({ color, size }) => <User size={size} color={color} />,
         }}
+
+         listeners={({ navigation }) => ({
+    tabPress: (e) => {
+      e.preventDefault()
+      navigation.navigate("Profile", {
+        screen: "ProfileMain", // Reset to the root of the stack
+      })
+    },
+  })}
+        
       >
         {() => <ProfileNavigator userId={userId} userRole={userRole} userData={userData} onLogout={onLogout} />}
       </Tab.Screen>
@@ -103,6 +126,16 @@ const MainTabs = ({ userId, userRole, userData, onLogout }) => {
 
 export default function AppNavigator({ userId, userRole, userData, onLogout }) {
   const { isDark } = useTheme()
+  const dispatch = useDispatch()
+  const currentUser = useSelector((state) => state.user.currentUser)
+  
+  // Check if currentUser is null and userData exists, then dispatch to Redux store
+  useEffect(() => {
+    if (!currentUser && userData) {
+      console.log("Setting user data in Redux from props:", userData)
+      dispatch(setUser(userData))
+    }
+  }, [currentUser, userData, dispatch])
 
   return (
     <Stack.Navigator
@@ -121,7 +154,7 @@ export default function AppNavigator({ userId, userRole, userData, onLogout }) {
       </Stack.Screen>
 
       <Stack.Screen
-        name="VideoCall"
+        name="Call"
         component={VideoCallScreen}
         options={{
           title: "Session",
@@ -129,17 +162,19 @@ export default function AppNavigator({ userId, userRole, userData, onLogout }) {
         }}
       />
 
+      
+
       <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ title: "Notifications Details" }} />
 
       <Stack.Screen name="SessionDetails" component={SessionDetailsScreen} options={{ title: "Session Details" }} />
 
       <Stack.Screen name="SessionNotes" component={SessionNotesScreen} options={{ title: "Session Notes" }} />
 
-      <Stack.Screen
+      {/* <Stack.Screen
         name="UserProfile"
         component={UserProfileScreen}
         options={({ route }) => ({ title: route.params?.userName || "Profile" })}
-      />
+      /> */}
 
       <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: "Settings" }} />
     
@@ -156,4 +191,3 @@ export default function AppNavigator({ userId, userRole, userData, onLogout }) {
     </Stack.Navigator>
   )
 }
-

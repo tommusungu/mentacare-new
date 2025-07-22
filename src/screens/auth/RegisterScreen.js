@@ -18,8 +18,8 @@ import { registerUser } from "../../redux/slices/userSlice"
 import { useToast } from "react-native-toast-notifications"
 import { Eye, EyeOff } from "lucide-react-native"
 import { StatusBar } from "react-native"
-import logoLight from '../../../assets/loginImage.png' 
 import logoDark from '../../../assets/loginImage.png'
+import { sendWelcomeEmail } from "../../utils/api"
 
 export default function RegisterScreen({ navigation }) {
   const { isDark } = useTheme()
@@ -81,6 +81,8 @@ export default function RegisterScreen({ navigation }) {
       )
 
       if (registerUser.fulfilled.match(resultAction)) {
+       
+
         toast.show("Account created successfully!", {
           type: "success",
           placement: "top",
@@ -121,7 +123,7 @@ export default function RegisterScreen({ navigation }) {
               />
         <View className="items-center mt-8 mb-6">
           <Image
-                               source={isDark ? logoDark : logoLight}
+                               source={logoDark}
                                className="w-auto h-[250px] rounded-xl mb-4"
                                resizeMode="contain"
                              />

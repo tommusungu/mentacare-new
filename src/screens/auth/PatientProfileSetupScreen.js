@@ -6,7 +6,7 @@ import { useTheme } from "../../context/ThemeContext"
 import { useDispatch } from "react-redux"
 import { updateUserProfile } from "../../redux/slices/userSlice"
 import { useToast } from "react-native-toast-notifications"
-import { fetchChatToken } from "../../hooks/fetchChatTokenHook"
+import { sendWelcomeEmail } from "../../utils/api"
 
 export default function PatientProfileSetupScreen({ navigation, route, onLogin }) {
   const { userData } = route.params
@@ -55,18 +55,23 @@ export default function PatientProfileSetupScreen({ navigation, route, onLogin }
       )
 
       if (updateUserProfile.fulfilled.match(resultAction)) {
+
+         sendWelcomeEmail({
+          email: userData.email,
+          name: userData.name,
+          userType: "patient", // or "professional"
+        });
+
         toast.show("Profile completed successfully!", {
           type: "success",
           placement: "top",
           duration: 3000,
         })
 
-        // Generate a mock token for Stream - in a real app, this would come from your backend
-        const mockToken = await fetchChatToken(userData.uid)
-        console.log('mockToken: ',mockToken)
+       
 
         // Call the login callback to set up Stream clients and complete the auth flow
-        onLogin(userData.uid, userData.name, mockToken, "patient", { ...userData, ...profileData })
+        onLogin(userData.uid, userData.name, "patient", { ...userData, ...profileData })
       } else {
         setError(resultAction.payload || "Failed to update profile. Please try again.")
         toast.show("Profile update failed", {

@@ -12,7 +12,7 @@ export const registerUser = createAsyncThunk(
       const user = userCredential.user
 
       // Update profile
-      await updateProfile(user, { displayName: name })
+      await updateProfile(user, { displayTestName: name })
 
       // Create user document in Firestore
       const userData = {

@@ -18,6 +18,8 @@ export default function AppointmentsNavigator({ userId, userRole }) {
 
   return (
     <Stack.Navigator
+      initialRouteName="AppointmentsList"
+
       screenOptions={{
         headerStyle: {
           backgroundColor: isDark ? "#121212" : "#FFFFFF",

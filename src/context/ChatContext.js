@@ -20,10 +20,13 @@ import AsyncStorage from "@react-native-async-storage/async-storage"
 import { useToast } from "react-native-toast-notifications"
 import { View, ActivityIndicator, Text } from "react-native"
 import { v4 as uuidv4 } from "uuid"
+import { useTheme } from "./ThemeContext"
 
 const ChatContext = createContext()
 
 export const ChatProvider = ({ children }) => {
+    const { isDark } = useTheme()
+  
   const [conversations, setConversations] = useState([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [isConnecting, setIsConnecting] = useState(false)
@@ -479,10 +482,12 @@ export const ChatProvider = ({ children }) => {
   }
 
   if (!isReady) {
+
     return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <ActivityIndicator size="large" color="#005FFF" />
-        <Text style={{ marginTop: 10 }}>Initializing chat...</Text>
+      <View 
+      className={`flex-1 justify-center items-center ${isDark ? "bg-[#1E1E1E]" : "bg-white"}`}
+      >
+        <ActivityIndicator size="large" color="#ea580c" />
       </View>
     )
   }

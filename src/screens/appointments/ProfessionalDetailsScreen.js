@@ -5,15 +5,20 @@ import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from "rea
 import { useTheme } from "../../context/ThemeContext"
 import { useNavigation, useRoute } from "@react-navigation/native"
 import { db } from "../../config/firebase"
-import { doc, getDoc, collection, query, where, getDocs } from "firebase/firestore"
+import { doc, getDoc, collection, query, where, getDocs, addDoc, serverTimestamp } from "firebase/firestore"
 import { useToast } from "react-native-toast-notifications"
 import { Calendar, Star, MessageCircle, Video, Award, BookOpen, Briefcase } from "lucide-react-native"
+import { useSelector } from "react-redux"
 
 export default function ProfessionalDetailsScreen() {
   const { isDark } = useTheme()
   const navigation = useNavigation()
   const route = useRoute()
   const toast = useToast()
+  
+  // Get current user ID from Redux store
+  const currentUser = useSelector((state) => state.user.currentUser)
+  const userId = currentUser?.uid
 
   const { professionalId, professionalName } = route.params
   const [professional, setProfessional] = useState(null)
@@ -71,14 +76,71 @@ export default function ProfessionalDetailsScreen() {
     const sum = reviews.reduce((total, review) => total + review.rating, 0)
     return (sum / reviews.length).toFixed(1)
   }
+  
+  // Start Chat function implementation
+  const startChat = async (user) => {
+    try {
+      // Check if direct message channel already exists
+      const existingChannelQuery = query(
+        collection(db, "channels"),
+        where("type", "==", "direct"),
+        where("members", "array-contains", userId),
+      )
+
+      const snapshot = await getDocs(existingChannelQuery)
+
+      const existingChannel = snapshot.docs.find((doc) => {
+        const data = doc.data()
+        return data.members.includes(user.id) && data.members.length === 2
+      })
+
+      if (existingChannel) {
+        // Navigate to existing channel Appointments
+       
+        navigation.navigate("Chat", {
+                    screen: "Channel",
+                    params: {
+                      channelId: existingChannel.id,
+          channelName: user.displayName || user.name || user.id,
+                    },
+                  })
+        return
+      }
+
+      // Create new channel
+      const channelData = {
+        name: user.displayName || user.name || user.id,
+        type: "direct",
+        members: [userId, user.id],
+        createdBy: userId,
+        createdAt: serverTimestamp(),
+        lastMessageAt: serverTimestamp(), // Initialize with creation time
+      }
+
+      const channelRef = await addDoc(collection(db, "channels"), channelData)
+
+      // Navigate to new channel
+      navigation.navigate("Channel", {
+        channelId: channelRef.id,
+        channelName: user.displayName || user.name || user.id,
+      })
+    } catch (error) {
+      console.error("Error starting chat:", error)
+      toast.show("Failed to start conversation", {
+        type: "danger",
+        placement: "top",
+        duration: 3000,
+      })
+    }
+  }
 
   if (loading) {
     return (
       <View className={`flex-1 justify-center items-center ${isDark ? "bg-[#121212]" : "bg-white"}`}>
         <ActivityIndicator size="large" color="#ea580c" />
-        <Text className={`mt-4 text-base ${isDark ? "text-white" : "text-black"}`}>
+        {/* <Text className={`mt-4 text-base ${isDark ? "text-white" : "text-black"}`}>
           Loading professional profile...
-        </Text>
+        </Text> */}
       </View>
     )
   }
@@ -118,9 +180,9 @@ export default function ProfessionalDetailsScreen() {
           </View>
         </View>
 
-        <View className="flex-row justify-around mb-6">
+        <View className="flex-row justify-between mb-6 gap-4 ">
           <TouchableOpacity
-            className="items-center bg-[#ea580c] p-3 rounded-lg w-[100px]"
+            className="flex-1 items-center bg-[#ea580c] p-3 rounded-lg w-[100px]"
             onPress={() => navigation.navigate("BookAppointment", { professionalId })}
           >
             <Calendar size={24} color="#FFFFFF" />
@@ -128,14 +190,12 @@ export default function ProfessionalDetailsScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            className="items-center bg-[#ea580c] p-3 rounded-lg w-[100px]"
+            className="flex-1 items-center bg-[#ea580c] p-3 rounded-lg w-[100px]"
             onPress={() => {
-              navigation.navigate("Chat", {
-                screen: "CreateChannel",
-                params: {
-                  userId: professionalId,
-                  userName: professional.name,
-                },
+              // Use startChat function instead of direct navigation
+              startChat({
+                id: professionalId,
+                name: professional.name
               })
             }}
           >
@@ -143,20 +203,7 @@ export default function ProfessionalDetailsScreen() {
             <Text className="text-white mt-2 font-medium">Message</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity
-            className="items-center bg-[#ea580c] p-3 rounded-lg w-[100px]"
-            onPress={() => {
-              // Create a direct call
-              navigation.navigate("VideoCall", {
-                channelId: `direct-${Date.now()}`,
-                callType: "video",
-                participants: [professionalId],
-              })
-            }}
-          >
-            <Video size={24} color="#FFFFFF" />
-            <Text className="text-white mt-2 font-medium">Call</Text>
-          </TouchableOpacity>
+         
         </View>
 
         {professional.bio && (
@@ -165,6 +212,7 @@ export default function ProfessionalDetailsScreen() {
             <Text className={`${isDark ? "text-white" : "text-black"}`}>{professional.bio}</Text>
           </View>
         )}
+
 
         <View className="mb-6">
           <Text className={`text-lg font-bold mb-2 ${isDark ? "text-white" : "text-black"}`}>Specialties</Text>
@@ -286,4 +334,3 @@ export default function ProfessionalDetailsScreen() {
     </ScrollView>
   )
 }
-

@@ -9,6 +9,16 @@ import { collection, query, where, getDocs } from "firebase/firestore"
 import { useToast } from "react-native-toast-notifications"
 import { Search, Star } from "lucide-react-native"
 
+// Utility function to shuffle array
+const shuffleArray = (array) => {
+  const shuffled = [...array]
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+  }
+  return shuffled
+}
+
 export default function ProfessionalsListScreen() {
   const { isDark } = useTheme()
   const navigation = useNavigation()
@@ -19,6 +29,8 @@ export default function ProfessionalsListScreen() {
   const [searchQuery, setSearchQuery] = useState("")
   const [loading, setLoading] = useState(true)
   const [specializations, setSpecializations] = useState([])
+
+  // console.log("specializations are: ", specializations)
   const [selectedSpecialization, setSelectedSpecialization] = useState(null)
 
   useEffect(() => {
@@ -28,6 +40,7 @@ export default function ProfessionalsListScreen() {
           collection(db, "users"),
           where("role", "==", "professional"),
           where("isProfileComplete", "==", true),
+          where("isVerified", "==", true),
         )
 
         const professionalsSnapshot = await getDocs(professionalsQuery)
@@ -39,13 +52,29 @@ export default function ProfessionalsListScreen() {
           professionalsData.push({ id: doc.id, ...data })
 
           if (data.specialization) {
-            specializationsSet.add(data.specialization)
+            // Split by comma and clean up each specialization
+            const splitSpecializations = data.specialization
+              .split(',')
+              .map(spec => spec.trim())
+              .filter(spec => spec.length > 0)
+            
+            // Add each specialization to the set
+            splitSpecializations.forEach(spec => {
+              specializationsSet.add(spec)
+            })
           }
         })
 
-        setProfessionals(professionalsData)
-        setFilteredProfessionals(professionalsData)
-        setSpecializations(Array.from(specializationsSet))
+        // Shuffle the professionals array
+        const shuffledProfessionals = shuffleArray(professionalsData)
+        
+        setProfessionals(shuffledProfessionals)
+        setFilteredProfessionals(shuffledProfessionals)
+        
+        // Convert set to array and shuffle
+        const specializationsArray = Array.from(specializationsSet)
+        const shuffledSpecializations = shuffleArray(specializationsArray)
+        setSpecializations(shuffledSpecializations)
       } catch (error) {
         console.error("Error fetching professionals:", error)
         toast.show("Failed to load professionals", {
@@ -78,9 +107,18 @@ export default function ProfessionalsListScreen() {
       )
     }
 
-    // Filter by specialization
+    // Filter by specialization - now handles comma-separated values
     if (selectedSpecialization) {
-      filtered = filtered.filter((prof) => prof.specialization === selectedSpecialization)
+      filtered = filtered.filter((prof) => {
+        if (!prof.specialization) return false
+        
+        // Split the professional's specialization and check if any match
+        const profSpecializations = prof.specialization
+          .split(',')
+          .map(spec => spec.trim())
+        
+        return profSpecializations.includes(selectedSpecialization)
+      })
     }
 
     setFilteredProfessionals(filtered)
@@ -109,13 +147,16 @@ export default function ProfessionalsListScreen() {
           </Text>
 
           {item.specialization && (
-            <View className="flex-row items-center">
-              <View className="px-2 py-1 rounded-full bg-[#ea580c]/20 mr-2">
-                <Text className="text-xs text-[#ea580c]">{item.specialization}</Text>
-              </View>
+            <View className="flex-row items-center flex-wrap">
+              {/* Display all specializations as separate tags */}
+              {item.specialization.split(',').map((spec, index) => (
+                <View key={index} className="px-2 py-1 rounded-full bg-[#ea580c]/20 mr-2 mb-1">
+                  <Text className="text-xs text-[#ea580c]">{spec.trim()}</Text>
+                </View>
+              ))}
 
               {item.experience && (
-                <Text className={`text-xs ${isDark ? "text-white/70" : "text-black/70"}`}>
+                <Text className={`text-xs ${isDark ? "text-white/70" : "text-black/70"} ml-2`}>
                   {item.experience} years experience
                 </Text>
               )}
@@ -124,13 +165,22 @@ export default function ProfessionalsListScreen() {
         </View>
       </View>
 
-      <View className="flex-row justify-between items-center mt-4 pt-4 border-t border-gray-700">
-        <View className="flex-row items-center">
+      <View className={`flex-row justify-between items-center mt-4 pt-4 border-t  ${isDark ? "border-[#404040]" : "border-gray-700"} `}>
+       
+       <>
+       
+       {item.rating ? (
+<View className="flex-row items-center">
           <Star size={16} color="#FFD700" fill="#FFD700" />
           <Text className={`ml-1 ${isDark ? "text-white" : "text-black"}`}>
-            {item.rating || "4.8"} ({item.reviewCount || "24"})
+            {item.rating || ""} ({item.reviewCount || ""})
           </Text>
         </View>
+       ) : (
+        <View/>
+       )}
+        
+       </>
 
         <TouchableOpacity
           className="bg-[#ea580c] py-2 px-4 rounded-lg"
@@ -227,4 +277,3 @@ export default function ProfessionalsListScreen() {
     </View>
   )
 }
-

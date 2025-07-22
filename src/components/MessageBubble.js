@@ -2,7 +2,7 @@
 import { View, Text, StyleSheet } from "react-native"
 import { useTheme } from "../context/ThemeContext"
 import { format } from "date-fns"
-import { Ionicons } from "@expo/vector-icons"
+import { Check, CheckCheck } from "lucide-react-native"
 
 const MessageBubble = ({
   message,
@@ -103,12 +103,21 @@ const MessageBubble = ({
             </Text>
 
             {isMyMessage && (
-              <Ionicons
-                name={isRead ? "checkmark-done" : "checkmark"}
-                size={14}
-                color={isRead ? "#34B7F1" : theme.dark ? "#999" : "#8c8c8c"}
-                style={styles.readIcon}
-              />
+              <>
+              {isRead ? (
+  <CheckCheck
+    size={14}
+    color="#34B7F1"
+    style={styles.readIcon}
+  />
+) : (
+  <Check
+    size={14}
+    color={theme.dark ? "#999" : "#8c8c8c"}
+    style={styles.readIcon}
+  />
+)}
+              </>
             )}
           </View>
         )}

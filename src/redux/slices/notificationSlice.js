@@ -7,7 +7,6 @@ export const fetchUserNotifications = createAsyncThunk(
   async (userId, { rejectWithValue }) => {
     try {
       const q = query(collection(db, "notifications"), where("userId", "==", userId), orderBy("createdAt", "desc"))
-
       const querySnapshot = await getDocs(q)
       const notifications = []
 

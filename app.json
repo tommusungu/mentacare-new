@@ -1,41 +1,96 @@
 {
   "expo": {
     "name": "Mentacare",
-    "slug": "stream",
+    "slug": "mentacare",
+    "scheme": "mentacare",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/favicon-1.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/favicon-3.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.tommusungu.stream",
+      "bundleIdentifier": "com.mentacare.app",
       "infoPlist": {
         "NSCameraUsageDescription": "Allow Mentacare to access your camera for video calls",
         "NSMicrophoneUsageDescription": "Allow Mentacare to access your microphone for voice and video calls",
-        "UIBackgroundModes": ["audio", "voip", "fetch"]
-      }
+        "UIBackgroundModes": [
+          "audio",
+          "voip",
+          "fetch"
+        ]
+      },
+      "bitcode": false
     },
-   
-    "assetBundlePatterns": ["**/*"],
-    
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/favicon-3.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.tommusungu.stream",
-      "permissions": ["CAMERA", "RECORD_AUDIO", "MODIFY_AUDIO_SETTINGS", "BLUETOOTH", "BLUETOOTH_CONNECT"]
+      "package": "com.mentacare.app",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "mentacare.co.ke",
+              "pathPrefix": "/"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
+      ],
+      "permissions": [
+        "CAMERA",
+        "RECORD_AUDIO",
+        "MODIFY_AUDIO_SETTINGS",
+        "BLUETOOTH",
+        "BLUETOOTH_CONNECT",
+        "android.permission.BLUETOOTH",
+        "android.permission.BLUETOOTH_CONNECT",
+        "android.permission.BLUETOOTH_ADMIN",
+        "android.permission.WAKE_LOCK",
+        "android.permission.ACCESS_NETWORK_STATE",
+        "android.permission.CAMERA",
+        "android.permission.INTERNET",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.SYSTEM_ALERT_WINDOW"
+      ]
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon-3.png"
     },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minSdkVersion": 24
+          }
+        }
+      ],
+      "@stream-io/video-react-native-sdk",
+      [
+        "@config-plugins/react-native-webrtc",
+        {
+          "cameraPermission": "Mentacare requires camera access in order to capture and transmit video",
+          "microphonePermission": "Mentacare requires microphone access in order to capture and transmit audio"
+        }
+      ],
       [
         "expo-camera",
         {
@@ -51,10 +106,9 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "7b8e1395-8ae2-4feb-85fc-b05847780ca2"
+        "projectId": "40a64df3-99a0-4821-afde-00279a925a20"
       }
     },
-    "owner": "tommusungu"
+    "owner": "mentacare"
   }
 }
-
