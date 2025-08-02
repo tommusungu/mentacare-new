@@ -1,12 +1,12 @@
 "use client"
 
 import { useState } from "react"
-import { View, Text, TouchableOpacity, Image, ScrollView, ActivityIndicator } from "react-native"
+import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator } from "react-native"
 import { useTheme } from "../../context/ThemeContext"
 import { useDispatch } from "react-redux"
 import { updateUserProfile } from "../../redux/slices/userSlice"
 import { useToast } from "react-native-toast-notifications"
-import { Check } from "lucide-react-native"
+import { Check, Heart, Stethoscope } from "lucide-react-native"
 
 export default function RoleSelectionScreen({ navigation, route }) {
   const { userData } = route.params
@@ -77,10 +77,18 @@ export default function RoleSelectionScreen({ navigation, route }) {
           onPress={() => setSelectedRole("patient")}
         >
           <View className="flex-row items-center">
-            <Image
-              source={{ uri: "https://placeholder.svg?height=60&width=60" }}
-              className="w-[60px] h-[60px] rounded-full"
-            />
+            <View className={`w-[60px] h-[60px] rounded-full justify-center items-center ${
+              selectedRole === "patient" 
+                ? "bg-[#ea580c]/20" 
+                : isDark 
+                  ? "bg-[#2C2C2C]" 
+                  : "bg-[#F5F5F5]"
+            }`}>
+              <Heart 
+                size={28} 
+                color={selectedRole === "patient" ? "#ea580c" : isDark ? "#FFFFFF" : "#666666"} 
+              />
+            </View>
             <View className="ml-4 flex-1">
               <Text className={`text-lg font-bold ${isDark ? "text-white" : "text-black"}`}>I'm seeking support</Text>
               <Text className={`text-sm mt-1 ${isDark ? "text-white/80" : "text-black/80"}`}>
@@ -106,10 +114,18 @@ export default function RoleSelectionScreen({ navigation, route }) {
           onPress={() => setSelectedRole("professional")}
         >
           <View className="flex-row items-center">
-            <Image
-              source={{ uri: "https://placeholder.svg?height=60&width=60" }}
-              className="w-[60px] h-[60px] rounded-full"
-            />
+            <View className={`w-[60px] h-[60px] rounded-full justify-center items-center ${
+              selectedRole === "professional" 
+                ? "bg-[#ea580c]/20" 
+                : isDark 
+                  ? "bg-[#2C2C2C]" 
+                  : "bg-[#F5F5F5]"
+            }`}>
+              <Stethoscope 
+                size={28} 
+                color={selectedRole === "professional" ? "#ea580c" : isDark ? "#FFFFFF" : "#666666"} 
+              />
+            </View>
             <View className="ml-4 flex-1">
               <Text className={`text-lg font-bold ${isDark ? "text-white" : "text-black"}`}>
                 I'm a mental health professional
@@ -143,4 +159,3 @@ export default function RoleSelectionScreen({ navigation, route }) {
     </ScrollView>
   )
 }
-

@@ -124,7 +124,7 @@ export default function PatientProfileSetupScreen({ navigation, route, onLogin }
           <View className="px-2">
             <Text className={`text-sm pt-2 px-2 ${isDark ? "text-white/80" : "text-black/80"}`}>Gender</Text>
             <View className="flex-row flex-wrap">
-              {["Male", "Female", "Non-binary", "Prefer not to say"].map((option) => (
+              {["Male", "Female", "Prefer not to say"].map((option) => (
                 <TouchableOpacity
                   key={option}
                   className={`m-2 px-4 py-2 rounded-full ${

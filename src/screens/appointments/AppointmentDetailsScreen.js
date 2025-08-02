@@ -766,6 +766,8 @@ const isPast = now.getTime() > scheduledTime.getTime() + 30 * 60 * 1000;
             </View>
           )}
 
+{userRole === "professional" && appointment.status === "completed" && (
+  <>
           {appointment.notes && appointment.notes.soapNotes && (
             <View className="mb-6">
               <Text className={`text-lg font-bold mb-2 ${isDark ? "text-white" : "text-black"}`}>SOAP Notes</Text>
@@ -805,8 +807,9 @@ const isPast = now.getTime() > scheduledTime.getTime() + 30 * 60 * 1000;
               </View>
             </View>
           )}
-
-          {appointment.notes && appointment.notes.sessionNotes && (
+          </>
+        )}
+          {/* {appointment.notes && appointment.notes.sessionNotes && (
             <View className="mb-6">
               <Text className={`text-lg font-bold mb-2 ${isDark ? "text-white" : "text-black"}`}>Session Notes</Text>
               <View className={`p-4 rounded-xl ${isDark ? "bg-[#1E1E1E]" : "bg-[#F5F5F5]"}`}>
@@ -822,7 +825,7 @@ const isPast = now.getTime() > scheduledTime.getTime() + 30 * 60 * 1000;
                 )}
               </View>
             </View>
-          )}
+          )} */}
 
           <View className="mt-4">
             {canJoin && !isPast && (

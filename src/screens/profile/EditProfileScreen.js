@@ -1,13 +1,21 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { View, Text, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, Alert } from "react-native"
+import { View, Text, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, Alert, Image } from "react-native"
 import { useTheme } from "../../context/ThemeContext"
 import { useNavigation } from "@react-navigation/native"
 import { useDispatch, useSelector } from "react-redux"
 import { updateUserProfile } from "../../redux/slices/userSlice"
 import { useToast } from "react-native-toast-notifications"
-import { Check, X, Trash2 } from "lucide-react-native"
+import { Check, X, Trash2, Upload, FileText, Camera, CheckCircle } from "lucide-react-native"
+import * as DocumentPicker from 'expo-document-picker'
+import * as ImagePicker from 'expo-image-picker'
+
+// Cloudinary configuration
+const CLOUDINARY_CLOUD_NAME = 'da0oyre6d'
+const CLOUDINARY_UPLOAD_PRESET = 'da0oyre6d'
+const CLOUDINARY_UPLOAD_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/upload`
+const CLOUDINARY_UPLOAD_URL_DOC = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/auto/upload`
 
 export default function EditProfileScreen() {
   const { isDark } = useTheme()
@@ -34,6 +42,14 @@ export default function EditProfileScreen() {
     certifications: [],
   })
 
+  // ID Card state for professionals
+  const [idCard, setIdCard] = useState({
+    frontUrl: "",
+    backUrl: "",
+    frontUploading: false,
+    backUploading: false
+  })
+
   useEffect(() => {
     if (currentUser) {
       // Initialize form with current user data
@@ -48,10 +64,102 @@ export default function EditProfileScreen() {
         gender: currentUser.gender || "",
         emergencyContact: currentUser.emergencyContact || "",
         education: currentUser.education || [],
-        certifications: currentUser.certifications || [],
+        certifications: currentUser.certifications?.map(cert => ({ 
+          ...cert, 
+          uploading: false,
+          documentUrl: cert.documentUrl || "",
+          documentName: cert.documentName || ""
+        })) || [],
       })
+
+      console.log("current user: ",currentUser)
+      // Initialize ID card data for professionals
+      if (userRole === "professional" && currentUser.identificationCard) {
+        setIdCard({
+          frontUrl: currentUser.identificationCard.frontUrl || "",
+          backUrl: currentUser.identificationCard.backUrl || "",
+          frontUploading: false,
+          backUploading: false
+        })
+      }
     }
-  }, [currentUser])
+  }, [currentUser, userRole])
+
+  // Cloudinary upload function for images
+  const uploadImageToCloudinary = async (imageAsset) => {
+    try {
+      const base64Img = `data:image/jpg;base64,${imageAsset.base64}`
+      
+      const formData = new FormData()
+      formData.append('file', base64Img)
+      formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET)
+
+      const response = await fetch(CLOUDINARY_UPLOAD_URL, {
+        method: 'POST',
+        body: formData,
+      })
+
+      const data = await response.json()
+      
+      if (data.secure_url) {
+        return {
+          success: true,
+          url: data.secure_url,
+          publicId: data.public_id
+        }
+      } else {
+        throw new Error(data.error?.message || 'Upload failed')
+      }
+    } catch (error) {
+      console.error('Cloudinary image upload error:', error)
+      return {
+        success: false,
+        error: error.message
+      }
+    }
+  }
+
+  // Cloudinary upload function for documents
+
+  const uploadDocumentToCloudinary = async (document) => {
+    try {
+      const formData = new FormData()
+      
+      formData.append('file', {
+        uri: document.uri,
+        type: document.mimeType || 'application/pdf',
+        name: document.name || 'document.pdf'
+      })
+      formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET)
+      formData.append('resource_type', 'auto')
+
+      const response = await fetch(CLOUDINARY_UPLOAD_URL_DOC, {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      })
+
+      const data = await response.json()
+      
+      if (data.secure_url) {
+        return {
+          success: true,
+          url: data.secure_url,
+          publicId: data.public_id
+        }
+      } else {
+        throw new Error(data.error?.message || 'Upload failed')
+      }
+    } catch (error) {
+      console.error('Cloudinary document upload error:', error)
+      return {
+        success: false,
+        error: error.message
+      }
+    }
+  }
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({
@@ -88,7 +196,14 @@ export default function EditProfileScreen() {
   const addCertification = () => {
     setFormData((prev) => ({
       ...prev,
-      certifications: [...prev.certifications, { name: "", issuer: "", year: "" }],
+      certifications: [...prev.certifications, { 
+        name: "", 
+        issuer: "", 
+        year: "",
+        documentUrl: "",
+        documentName: "",
+        uploading: false
+      }],
     }))
   }
 
@@ -108,6 +223,167 @@ export default function EditProfileScreen() {
       ...prev,
       certifications: newCertifications,
     }))
+  }
+
+  const uploadCertificationDocument = async (index) => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ['application/pdf', 'image/*'],
+        copyToCacheDirectory: true,
+        multiple: false
+      })
+
+      if (result.canceled) return
+
+      const document = result.assets[0]
+
+      // Set uploading state
+      const newCertifications = [...formData.certifications]
+      newCertifications[index].uploading = true
+      setFormData(prev => ({
+        ...prev,
+        certifications: newCertifications
+      }))
+
+      const uploadResult = await uploadDocumentToCloudinary(document)
+      
+      if (uploadResult.success) {
+        newCertifications[index].documentUrl = uploadResult.url
+        newCertifications[index].documentName = document.name
+        newCertifications[index].uploading = false
+        setFormData(prev => ({
+          ...prev,
+          certifications: newCertifications
+        }))
+        
+        toast.show("Certificate document uploaded successfully!", {
+          type: "success",
+          placement: "top",
+          duration: 3000,
+        })
+      } else {
+        throw new Error(uploadResult.error)
+      }
+    } catch (error) {
+      const newCertifications = [...formData.certifications]
+      newCertifications[index].uploading = false
+      setFormData(prev => ({
+        ...prev,
+        certifications: newCertifications
+      }))
+      
+      toast.show("Failed to upload document: " + error.message, {
+        type: "danger",
+        placement: "top",
+        duration: 3000,
+      })
+    }
+  }
+
+  const showImagePickerOptions = (type) => {
+    Alert.alert(
+      "Select Image",
+      "Choose an option",
+      [
+        { text: "Camera", onPress: () => openCamera(type) },
+        { text: "Gallery", onPress: () => openGallery(type) },
+        { text: "Cancel", style: "cancel" }
+      ]
+    )
+  }
+
+  const openCamera = async (type) => {
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync()
+      if (status !== 'granted') {
+        Alert.alert('Permission needed', 'Camera permission is required to take photos')
+        return
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [16, 10],
+        quality: 0.8,
+        base64: true,
+      })
+
+      if (!result.canceled && result.assets[0]) {
+        uploadIdCardImage(result.assets[0], type)
+      }
+    } catch (error) {
+      toast.show("Error opening camera: " + error.message, {
+        type: "danger",
+        placement: "top",
+        duration: 3000,
+      })
+    }
+  }
+
+  const openGallery = async (type) => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
+      if (status !== 'granted') {
+        Alert.alert('Permission needed', 'Media library permission is required to select photos')
+        return
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [16, 10],
+        quality: 0.8,
+        base64: true,
+      })
+
+      if (!result.canceled && result.assets[0]) {
+        uploadIdCardImage(result.assets[0], type)
+      }
+    } catch (error) {
+      toast.show("Error opening gallery: " + error.message, {
+        type: "danger",
+        placement: "top",
+        duration: 3000,
+      })
+    }
+  }
+
+  const uploadIdCardImage = async (imageAsset, type) => {
+    try {
+      setIdCard(prev => ({
+        ...prev,
+        [`${type}Uploading`]: true
+      }))
+
+      const uploadResult = await uploadImageToCloudinary(imageAsset)
+      
+      if (uploadResult.success) {
+        setIdCard(prev => ({
+          ...prev,
+          [`${type}Url`]: uploadResult.url,
+          [`${type}Uploading`]: false
+        }))
+        
+        toast.show(`ID card ${type} uploaded successfully!`, {
+          type: "success",
+          placement: "top",
+          duration: 3000,
+        })
+      } else {
+        throw new Error(uploadResult.error)
+      }
+    } catch (error) {
+      setIdCard(prev => ({
+        ...prev,
+        [`${type}Uploading`]: false
+      }))
+      
+      toast.show(`Failed to upload ID card ${type}: ${error.message}`, {
+        type: "danger",
+        placement: "top",
+        duration: 3000,
+      })
+    }
   }
 
   const validateForm = () => {
@@ -172,7 +448,6 @@ export default function EditProfileScreen() {
 
     setSaving(true)
     try {
-      // Prepare profile data
       const profileData = {
         name: formData.name,
         updatedAt: new Date().toISOString(),
@@ -184,7 +459,21 @@ export default function EditProfileScreen() {
         profileData.experience = Number(formData.experience)
         profileData.bio = formData.bio
         profileData.education = formData.education
-        profileData.certifications = formData.certifications
+        profileData.certifications = formData.certifications.map(cert => ({
+          name: cert.name,
+          issuer: cert.issuer,
+          year: cert.year,
+          documentUrl: cert.documentUrl,
+          documentName: cert.documentName
+        }))
+        
+        // Include ID card data if updated
+        if (idCard.frontUrl || idCard.backUrl) {
+          profileData.identificationCard = {
+            frontUrl: idCard.frontUrl,
+            backUrl: idCard.backUrl
+          }
+        }
       } else {
         profileData.age = Number(formData.age)
         profileData.gender = formData.gender
@@ -268,7 +557,7 @@ export default function EditProfileScreen() {
 
         <Text className={`text-sm mb-1 ${isDark ? "text-white/70" : "text-black/70"}`}>Gender</Text>
         <View className="flex-row flex-wrap mb-4">
-          {["Male", "Female", "Non-binary", "Prefer not to say"].map((option) => (
+          {["Male", "Female", "Prefer not to say"].map((option) => (
             <TouchableOpacity
               key={option}
               className={`mr-2 mb-2 px-4 py-2 rounded-full ${
@@ -301,9 +590,8 @@ export default function EditProfileScreen() {
     </>
   )
 
-  const renderProfessionalForm = () =>
-    (
-      <>
+  const renderProfessionalForm = () => (
+    <>
       <View className="mb-6">
         <Text className={`text-base font-bold mb-2 ${isDark ? 'text-white' : 'text-black'}`}>
           Personal Information
@@ -506,7 +794,7 @@ export default function EditProfileScreen() {
               Year
             </Text>
             <TextInput
-              className={`h-12 rounded-lg px-4 text-base ${
+              className={`h-12 rounded-lg px-4 mb-2 text-base ${
                 isDark
                   ? 'bg-[#1E1E1E] text-white border border-[#2C2C2C]'
                   : 'bg-[#F5F5F5] text-black border border-[#E0E0E0]'
@@ -515,6 +803,44 @@ export default function EditProfileScreen() {
               onChangeText={(value) => updateCertification(index, 'year', value)}
               keyboardType="numeric"
             />
+
+            {/* Certificate Document Upload */}
+            <Text className={`text-xs mb-1 ${isDark ? 'text-white/70' : 'text-black/70'}`}>
+              Certificate Document
+            </Text>
+            <TouchableOpacity
+              className={`h-12 rounded-lg px-4 mb-2 flex-row items-center justify-between ${
+                isDark
+                  ? 'bg-[#1E1E1E] border border-[#2C2C2C]'
+                  : 'bg-[#F5F5F5] border border-[#E0E0E0]'
+              }`}
+              onPress={() => uploadCertificationDocument(index)}
+              disabled={cert.uploading}
+            >
+              <View className="flex-row items-center flex-1">
+                {cert.uploading ? (
+                  <ActivityIndicator size="small" color="#ea580c" className="mr-2" />
+                ) : cert.documentUrl ? (
+                  <CheckCircle size={16} color="#10B981" className="mr-2" />
+                ) : (
+                  <Upload size={16} color={isDark ? '#FFFFFF80' : '#00000080'} className="mr-2" />
+                )}
+                <Text
+                  className={`text-base flex-1 ${
+                    cert.documentUrl
+                      ? isDark ? 'text-green-400' : 'text-green-600'
+                      : isDark ? 'text-white/70' : 'text-black/70'
+                  }`}
+                  numberOfLines={1}
+                >
+                  {cert.uploading 
+                    ? 'Uploading...' 
+                    : cert.documentName || 'Upload Certificate Document'
+                  }
+                </Text>
+              </View>
+              <FileText size={16} color={isDark ? '#FFFFFF80' : '#00000080'} />
+            </TouchableOpacity>
           </View>
         ))}
         
@@ -525,54 +851,145 @@ export default function EditProfileScreen() {
           <Text className="text-[#ea580c] text-base">+ Add Certification</Text>
         </TouchableOpacity>
       </View>
+
+      {/* ID Card Upload Section for Professionals */}
+      <View className="mb-6">
+        <Text className={`text-base font-bold mb-2 ${isDark ? 'text-white' : 'text-black'}`}>
+          Professional ID Card
+        </Text>
+        <Text className={`text-xs mb-4 ${isDark ? 'text-white/70' : 'text-black/70'}`}>
+          Upload clear photos of both sides of your professional ID card for verification
+        </Text>
+
+        {/* Front ID Card */}
+        <Text className={`text-sm mb-2 ${isDark ? 'text-white/70' : 'text-black/70'}`}>
+          Front Side
+        </Text>
+        <TouchableOpacity
+          className={`h-40 rounded-lg mb-4 justify-center items-center ${
+            isDark
+              ? 'bg-[#1E1E1E] border border-[#2C2C2C]'
+              : 'bg-[#F5F5F5] border border-[#E0E0E0]'
+          }`}
+          onPress={() => showImagePickerOptions('front')}
+          disabled={idCard.frontUploading}
+        >
+          {idCard.frontUploading ? (
+            <View className="items-center">
+              <ActivityIndicator size="large" color="#ea580c" />
+              <Text className={`mt-2 ${isDark ? 'text-white/70' : 'text-black/70'}`}>
+                Uploading...
+              </Text>
+            </View>
+          ) : idCard.frontUrl ? (
+            <View className="items-center w-full h-full">
+              <Image 
+                source={{ uri: idCard.frontUrl }} 
+                className="w-full h-full rounded-lg"
+                resizeMode="cover"
+              />
+              <View className="absolute top-2 right-2 bg-green-500 rounded-full p-1">
+                <Check size={12} color="white" />
+              </View>
+            </View>
+          ) : (
+            <View className="items-center">
+              <Camera size={32} color={isDark ? '#FFFFFF80' : '#00000080'} />
+              <Text className={`mt-2 ${isDark ? 'text-white/70' : 'text-black/70'}`}>
+                Upload Front ID
+              </Text>
+            </View>
+          )}
+        </TouchableOpacity>
+
+        {/* Back ID Card */}
+        <Text className={`text-sm mb-2 ${isDark ? 'text-white/70' : 'text-black/70'}`}>
+          Back Side
+        </Text>
+        <TouchableOpacity
+          className={`h-40 rounded-lg mb-4 justify-center items-center ${
+            isDark
+              ? 'bg-[#1E1E1E] border border-[#2C2C2C]'
+              : 'bg-[#F5F5F5] border border-[#E0E0E0]'
+          }`}
+          onPress={() => showImagePickerOptions('back')}
+          disabled={idCard.backUploading}
+        >
+          {idCard.backUploading ? (
+            <View className="items-center">
+              <ActivityIndicator size="large" color="#ea580c" />
+              <Text className={`mt-2 ${isDark ? 'text-white/70' : 'text-black/70'}`}>
+                Uploading...
+              </Text>
+            </View>
+          ) : idCard.backUrl ? (
+            <View className="items-center w-full h-full">
+              <Image 
+                source={{ uri: idCard.backUrl }} 
+                className="w-full h-full rounded-lg"
+                resizeMode="cover"
+              />
+              <View className="absolute top-2 right-2 bg-green-500 rounded-full p-1">
+                <Check size={12} color="white" />
+              </View>
+            </View>
+          ) : (
+            <View className="items-center">
+              <Camera size={32} color={isDark ? '#FFFFFF80' : '#00000080'} />
+              <Text className={`mt-2 ${isDark ? 'text-white/70' : 'text-black/70'}`}>
+                Upload Back ID
+              </Text>
+            </View>
+          )}
+        </TouchableOpacity>
+      </View>
     </>
-    )
+  )
 
   if (loading) {
     return (
-      <View className={`flex-1 justify-center items-center ${isDark ? "bg-[#121212]" : "bg-white"}`}>
+      <View className={`flex-1 justify-center items-center ${isDark ? 'bg-black' : 'bg-white'}`}>
         <ActivityIndicator size="large" color="#ea580c" />
-        <Text className={`mt-4 text-base ${isDark ? "text-white" : "text-black"}`}>Loading profile data...</Text>
+        <Text className={`mt-2 ${isDark ? 'text-white' : 'text-black'}`}>Loading profile...</Text>
       </View>
     )
   }
 
   return (
-    <ScrollView className={`flex-1 ${isDark ? "bg-[#121212]" : "bg-white"}`}>
-      <View className="p-6">
-        <Text className={`text-2xl font-bold mb-6 ${isDark ? "text-white" : "text-black"}`}>Edit Profile</Text>
-
-        {userRole === "patient" ? renderPatientForm() : renderProfessionalForm()}
-
-        <View className="flex-row justify-between mt-4">
-          <TouchableOpacity
-            className="flex-1 h-12 rounded-lg justify-center items-center border border-[#FF3B30] mr-2"
-            onPress={handleCancel}
-            disabled={saving}
-          >
-            <View className="flex-row items-center">
-              <X size={20} color="#FF3B30" />
-              <Text className="text-[#FF3B30] text-base font-bold ml-2">Cancel</Text>
-            </View>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            className="flex-1 h-12 rounded-lg justify-center items-center bg-[#ea580c] ml-2"
-            onPress={handleSave}
-            disabled={saving}
-          >
-            {saving ? (
-              <ActivityIndicator color="#FFFFFF" />
-            ) : (
-              <View className="flex-row items-center">
-                <Check size={20} color="#FFFFFF" />
-                <Text className="text-white text-base font-bold ml-2">Save</Text>
-              </View>
-            )}
-          </TouchableOpacity>
-        </View>
+    <View className={`flex-1 ${isDark ? 'bg-black' : 'bg-white'}`}>
+      {/* Header */}
+      <View className={`flex-row items-center justify-between px-4 py-3 border-b ${
+        isDark ? 'border-[#2C2C2C]' : 'border-[#E0E0E0]'
+      }`}>
+        <TouchableOpacity onPress={handleCancel}>
+          <X size={24} color={isDark ? 'white' : 'black'} />
+        </TouchableOpacity>
+        
+        <Text className={`text-lg font-bold ${isDark ? 'text-white' : 'text-black'}`}>
+          Edit Profile
+        </Text>
+        
+        <TouchableOpacity
+          onPress={handleSave}
+          disabled={saving}
+          className={`px-4 py-2 rounded-lg ${saving ? 'bg-gray-400' : 'bg-[#ea580c]'}`}
+        >
+          {saving ? (
+            <ActivityIndicator size="small" color="white" />
+          ) : (
+            <Check size={20} color="white" />
+          )}
+        </TouchableOpacity>
       </View>
-    </ScrollView>
+
+      {/* Form Content */}
+      <ScrollView 
+        className="flex-1 px-4 py-6"
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        {userRole === "professional" ? renderProfessionalForm() : renderPatientForm()}
+      </ScrollView>
+    </View>
   )
 }
-

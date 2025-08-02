@@ -15,6 +15,7 @@ import { sendWelcomeEmail } from "../../utils/api"
 const CLOUDINARY_CLOUD_NAME = 'da0oyre6d'
 const CLOUDINARY_UPLOAD_PRESET = 'da0oyre6d'
 const CLOUDINARY_UPLOAD_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/upload`
+const CLOUDINARY_UPLOAD_URL_DOC = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/auto/upload`
 
 export default function ProfessionalProfileSetupScreen({ navigation, route, onLogin }) {
   const { userData } = route.params
@@ -93,7 +94,7 @@ export default function ProfessionalProfileSetupScreen({ navigation, route, onLo
       formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET)
       formData.append('resource_type', 'auto') // Let Cloudinary auto-detect
 
-      const response = await fetch(CLOUDINARY_UPLOAD_URL, {
+      const response = await fetch(CLOUDINARY_UPLOAD_URL_DOC, {
         method: 'POST',
         body: formData,
         headers: {
@@ -649,7 +650,10 @@ export default function ProfessionalProfileSetupScreen({ navigation, route, onLo
 
         {/* Identification Card Section */}
         <Text className={`text-lg font-bold mb-4 ${isDark ? "text-white" : "text-black"}`}>Identification Card</Text>
-        
+        <Text className={`text-xs mb-4 ${isDark ? 'text-white/70' : 'text-black/70'}`}>
+          Upload clear photos of both sides of your professional ID card for verification
+        </Text>
+
         <View className="mb-6">
           {/* ID Front */}
           <Text className={`text-base font-medium mb-2 ${isDark ? "text-white" : "text-black"}`}>

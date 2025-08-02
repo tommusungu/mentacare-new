@@ -28,6 +28,7 @@
       "bitcode": false
     },
     "android": {
+      "versionCode": 2,
       "adaptiveIcon": {
         "foregroundImage": "./assets/favicon-3.png",
         "backgroundColor": "#ffffff"
